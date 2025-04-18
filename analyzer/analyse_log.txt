@@ -1,0 +1,384 @@
+
+===== Analyse vom 2025-04-18T20:41:48 =====
+Checkpoint: quantum_arona_checkpoint_epoch_1.json
+
+🔎 Top 5 aktivierte Knoten:
+  Cortex Criticus: 0.5345
+  Ethik: 0.5345
+  Technologie: 0.5345
+  Cortex Creativus: 0.5172
+  Bewusstsein: 0.5000
+
+🔗 Top 5 Hebb-Verbindungen:
+  Limbus Affektus -> Cortex Criticus: 0.0762
+  Ethik -> Cortex Criticus: 0.0657
+  Meta Cognitio -> Limbus Affektus: 0.0417
+  Technologie -> Cortex Creativus: 0.0316
+  Limbus Affektus -> Cortex Creativus: 0.0297
+
+🧠 Trainer-State:
+  current_n_shots: 30
+  last_epoch_avg_loss: 0.34605530982178045
+  highest_loss_recorded: 0.34605530982178045
+  loss_at_last_peak: 0.34605530982178045
+  persisting_after_peak: True
+
+===== Analyse vom 2025-04-18T20:41:49 =====
+Checkpoint: quantum_arona_checkpoint_epoch_2.json
+
+🔎 Top 5 aktivierte Knoten:
+  Cortex Criticus: 0.6667
+  Meta Cognitio: 0.5167
+  Philosophie: 0.5167
+  Simulatrix Neuralis: 0.5000
+  Ziel_Rationalitaet: 0.5000
+
+🔗 Top 5 Hebb-Verbindungen:
+  Limbus Affektus -> Cortex Criticus: 0.0458
+  Limbus Affektus -> Cortex Creativus: 0.0381
+  Ethik -> Cortex Criticus: 0.0357
+  Meta Cognitio -> Limbus Affektus: 0.0298
+  Philosophie -> Meta Cognitio: 0.0180
+
+🧠 Trainer-State:
+  current_n_shots: 30
+  last_epoch_avg_loss: 0.34596695104673525
+  highest_loss_recorded: 0.34605530982178045
+  loss_at_last_peak: 0.34605530982178045
+  persisting_after_peak: True
+
+===== Analyse vom 2025-04-18T20:41:49 =====
+Checkpoint: quantum_arona_checkpoint_epoch_3.json
+
+🔎 Top 5 aktivierte Knoten:
+  Meta Cognitio: 0.5667
+  Cortex Socialis: 0.5667
+  Cortex Criticus: 0.5500
+  Ethik: 0.5333
+  Cortex Creativus: 0.5167
+
+🔗 Top 5 Hebb-Verbindungen:
+  Limbus Affektus -> Cortex Criticus: 0.0625
+  Limbus Affektus -> Cortex Creativus: 0.0580
+  Technologie -> Cortex Creativus: 0.0370
+  Meta Cognitio -> Limbus Affektus: 0.0360
+  Ethik -> Cortex Criticus: 0.0348
+
+🧠 Trainer-State:
+  current_n_shots: 30
+  last_epoch_avg_loss: 0.33419618332067424
+  highest_loss_recorded: 0.34605530982178045
+  loss_at_last_peak: 0.34605530982178045
+  persisting_after_peak: True
+
+===== Analyse vom 2025-04-18T20:41:50 =====
+Checkpoint: quantum_arona_checkpoint_epoch_4.json
+
+🔎 Top 5 aktivierte Knoten:
+  Meta Cognitio: 0.6000
+  Philosophie: 0.5667
+  Simulatrix Neuralis: 0.5500
+  Cortex Creativus: 0.5333
+  Cortex Criticus: 0.5000
+
+🔗 Top 5 Hebb-Verbindungen:
+  Ethik -> Cortex Criticus: 0.0627
+  Limbus Affektus -> Cortex Criticus: 0.0546
+  Limbus Affektus -> Cortex Creativus: 0.0439
+  Philosophie -> Meta Cognitio: 0.0420
+  Meta Cognitio -> Limbus Affektus: 0.0245
+
+🧠 Trainer-State:
+  current_n_shots: 30
+  last_epoch_avg_loss: 0.33527853991648604
+  highest_loss_recorded: 0.34605530982178045
+  loss_at_last_peak: 0.34605530982178045
+  persisting_after_peak: True
+
+===== Analyse vom 2025-04-18T20:41:50 =====
+Checkpoint: quantum_arona_checkpoint_epoch_5.json
+
+🔎 Top 5 aktivierte Knoten:
+  Cortex Criticus: 0.6000
+  Philosophie: 0.5667
+  Simulatrix Neuralis: 0.5167
+  Meta Cognitio: 0.5000
+  Ziel_Rationalitaet: 0.5000
+
+🔗 Top 5 Hebb-Verbindungen:
+  Limbus Affektus -> Cortex Criticus: 0.0646
+  Meta Cognitio -> Limbus Affektus: 0.0382
+  Limbus Affektus -> Cortex Creativus: 0.0355
+  Technologie -> Cortex Creativus: 0.0313
+  Ethik -> Cortex Criticus: 0.0259
+
+🧠 Trainer-State:
+  current_n_shots: 30
+  last_epoch_avg_loss: 0.33456755267371874
+  highest_loss_recorded: 0.34605530982178045
+  loss_at_last_peak: 0.34605530982178045
+  persisting_after_peak: True
+
+===== Analyse vom 2025-04-18T20:41:50 =====
+Checkpoint: quantum_arona_checkpoint_epoch_6.json
+
+🔎 Top 5 aktivierte Knoten:
+  Ethik: 0.5833
+  Bewusstsein: 0.5333
+  Philosophie: 0.5000
+  Ziel_Rationalitaet: 0.5000
+  Ziel_Empathie: 0.5000
+
+🔗 Top 5 Hebb-Verbindungen:
+  Limbus Affektus -> Cortex Criticus: 0.0548
+  Ethik -> Cortex Criticus: 0.0445
+  Philosophie -> Meta Cognitio: 0.0249
+  Technologie -> Cortex Creativus: 0.0196
+  Meta Cognitio -> Limbus Affektus: 0.0190
+
+🧠 Trainer-State:
+  current_n_shots: 30
+  last_epoch_avg_loss: 0.3340674652427093
+  highest_loss_recorded: 0.34605530982178045
+  loss_at_last_peak: 0.34605530982178045
+  persisting_after_peak: True
+
+===== Analyse vom 2025-04-18T21:35:13 =====
+Checkpoint: quantum_arona_checkpoint_epoch_1.json
+
+🔎 Top 5 aktivierte Knoten:
+  Cortex Criticus: 0.5345
+  Ethik: 0.5345
+  Technologie: 0.5345
+  Cortex Creativus: 0.5172
+  Bewusstsein: 0.5000
+
+🔗 Top 5 Hebb-Verbindungen:
+  Limbus Affektus -> Cortex Criticus: 0.0762
+  Ethik -> Cortex Criticus: 0.0657
+  Meta Cognitio -> Limbus Affektus: 0.0417
+  Technologie -> Cortex Creativus: 0.0316
+  Limbus Affektus -> Cortex Creativus: 0.0297
+
+🧠 Trainer-State:
+  current_n_shots: 30
+  last_epoch_avg_loss: 0.34605530982178045
+  highest_loss_recorded: 0.34605530982178045
+  loss_at_last_peak: 0.34605530982178045
+  persisting_after_peak: True
+
+===== Analyse vom 2025-04-18T21:35:14 =====
+Checkpoint: quantum_arona_checkpoint_epoch_2.json
+
+🔎 Top 5 aktivierte Knoten:
+  Cortex Criticus: 0.6667
+  Meta Cognitio: 0.5167
+  Philosophie: 0.5167
+  Simulatrix Neuralis: 0.5000
+  Ziel_Rationalitaet: 0.5000
+
+🔗 Top 5 Hebb-Verbindungen:
+  Limbus Affektus -> Cortex Criticus: 0.0458
+  Limbus Affektus -> Cortex Creativus: 0.0381
+  Ethik -> Cortex Criticus: 0.0357
+  Meta Cognitio -> Limbus Affektus: 0.0298
+  Philosophie -> Meta Cognitio: 0.0180
+
+🧠 Trainer-State:
+  current_n_shots: 30
+  last_epoch_avg_loss: 0.34596695104673525
+  highest_loss_recorded: 0.34605530982178045
+  loss_at_last_peak: 0.34605530982178045
+  persisting_after_peak: True
+
+===== Analyse vom 2025-04-18T21:35:14 =====
+Checkpoint: quantum_arona_checkpoint_epoch_3.json
+
+🔎 Top 5 aktivierte Knoten:
+  Meta Cognitio: 0.5667
+  Cortex Socialis: 0.5667
+  Cortex Criticus: 0.5500
+  Ethik: 0.5333
+  Cortex Creativus: 0.5167
+
+🔗 Top 5 Hebb-Verbindungen:
+  Limbus Affektus -> Cortex Criticus: 0.0625
+  Limbus Affektus -> Cortex Creativus: 0.0580
+  Technologie -> Cortex Creativus: 0.0370
+  Meta Cognitio -> Limbus Affektus: 0.0360
+  Ethik -> Cortex Criticus: 0.0348
+
+🧠 Trainer-State:
+  current_n_shots: 30
+  last_epoch_avg_loss: 0.33419618332067424
+  highest_loss_recorded: 0.34605530982178045
+  loss_at_last_peak: 0.34605530982178045
+  persisting_after_peak: True
+
+===== Analyse vom 2025-04-18T21:35:15 =====
+Checkpoint: quantum_arona_checkpoint_epoch_4.json
+
+🔎 Top 5 aktivierte Knoten:
+  Meta Cognitio: 0.6000
+  Philosophie: 0.5667
+  Simulatrix Neuralis: 0.5500
+  Cortex Creativus: 0.5333
+  Cortex Criticus: 0.5000
+
+🔗 Top 5 Hebb-Verbindungen:
+  Ethik -> Cortex Criticus: 0.0627
+  Limbus Affektus -> Cortex Criticus: 0.0546
+  Limbus Affektus -> Cortex Creativus: 0.0439
+  Philosophie -> Meta Cognitio: 0.0420
+  Meta Cognitio -> Limbus Affektus: 0.0245
+
+🧠 Trainer-State:
+  current_n_shots: 30
+  last_epoch_avg_loss: 0.33527853991648604
+  highest_loss_recorded: 0.34605530982178045
+  loss_at_last_peak: 0.34605530982178045
+  persisting_after_peak: True
+
+===== Analyse vom 2025-04-18T21:35:15 =====
+Checkpoint: quantum_arona_checkpoint_epoch_5.json
+
+🔎 Top 5 aktivierte Knoten:
+  Cortex Criticus: 0.6000
+  Philosophie: 0.5667
+  Simulatrix Neuralis: 0.5167
+  Meta Cognitio: 0.5000
+  Ziel_Rationalitaet: 0.5000
+
+🔗 Top 5 Hebb-Verbindungen:
+  Limbus Affektus -> Cortex Criticus: 0.0646
+  Meta Cognitio -> Limbus Affektus: 0.0382
+  Limbus Affektus -> Cortex Creativus: 0.0355
+  Technologie -> Cortex Creativus: 0.0313
+  Ethik -> Cortex Criticus: 0.0259
+
+🧠 Trainer-State:
+  current_n_shots: 30
+  last_epoch_avg_loss: 0.33456755267371874
+  highest_loss_recorded: 0.34605530982178045
+  loss_at_last_peak: 0.34605530982178045
+  persisting_after_peak: True
+
+===== Analyse vom 2025-04-18T21:35:15 =====
+Checkpoint: quantum_arona_checkpoint_epoch_6.json
+
+🔎 Top 5 aktivierte Knoten:
+  Ethik: 0.5833
+  Bewusstsein: 0.5333
+  Philosophie: 0.5000
+  Ziel_Rationalitaet: 0.5000
+  Ziel_Empathie: 0.5000
+
+🔗 Top 5 Hebb-Verbindungen:
+  Limbus Affektus -> Cortex Criticus: 0.0548
+  Ethik -> Cortex Criticus: 0.0445
+  Philosophie -> Meta Cognitio: 0.0249
+  Technologie -> Cortex Creativus: 0.0196
+  Meta Cognitio -> Limbus Affektus: 0.0190
+
+🧠 Trainer-State:
+  current_n_shots: 30
+  last_epoch_avg_loss: 0.3340674652427093
+  highest_loss_recorded: 0.34605530982178045
+  loss_at_last_peak: 0.34605530982178045
+  persisting_after_peak: True
+
+===== Analyse vom 2025-04-18T21:35:16 =====
+Checkpoint: quantum_arona_checkpoint_epoch_7.json
+
+🔎 Top 5 aktivierte Knoten:
+  Cortex Creativus: 0.6167
+  Meta Cognitio: 0.6000
+  Technologie: 0.5500
+  Cortex Socialis: 0.5167
+  Cortex Criticus: 0.5000
+
+🔗 Top 5 Hebb-Verbindungen:
+  Ethik -> Cortex Criticus: 0.0601
+  Technologie -> Cortex Creativus: 0.0460
+  Limbus Affektus -> Cortex Criticus: 0.0418
+  Limbus Affektus -> Cortex Creativus: 0.0395
+  Meta Cognitio -> Limbus Affektus: 0.0341
+
+🧠 Trainer-State:
+  current_n_shots: 30
+  last_epoch_avg_loss: 0.33410748363336323
+  highest_loss_recorded: 0.34605530982178045
+  loss_at_last_peak: 0.34605530982178045
+  persisting_after_peak: True
+
+===== Analyse vom 2025-04-18T21:35:16 =====
+Checkpoint: quantum_arona_checkpoint_epoch_8.json
+
+🔎 Top 5 aktivierte Knoten:
+  Philosophie: 0.6167
+  Cortex Criticus: 0.5833
+  Technologie: 0.5667
+  Meta Cognitio: 0.5333
+  Cortex Creativus: 0.5333
+
+🔗 Top 5 Hebb-Verbindungen:
+  Limbus Affektus -> Cortex Criticus: 0.0472
+  Philosophie -> Meta Cognitio: 0.0373
+  Limbus Affektus -> Cortex Creativus: 0.0368
+  Ethik -> Cortex Criticus: 0.0317
+  Meta Cognitio -> Limbus Affektus: 0.0274
+
+🧠 Trainer-State:
+  current_n_shots: 30
+  last_epoch_avg_loss: 0.33385021687002947
+  highest_loss_recorded: 0.34605530982178045
+  loss_at_last_peak: 0.34605530982178045
+  persisting_after_peak: True
+
+===== Analyse vom 2025-04-18T21:35:17 =====
+Checkpoint: quantum_arona_checkpoint_epoch_9.json
+
+🔎 Top 5 aktivierte Knoten:
+  Philosophie: 0.6167
+  Cortex Criticus: 0.6000
+  Technologie: 0.5667
+  Ethik: 0.5500
+  Bewusstsein: 0.5500
+
+🔗 Top 5 Hebb-Verbindungen:
+  Limbus Affektus -> Cortex Criticus: 0.2451
+  Ethik -> Cortex Criticus: 0.0916
+  Limbus Affektus -> Cortex Creativus: 0.0893
+  Meta Cognitio -> Limbus Affektus: 0.0631
+  Technologie -> Cortex Creativus: 0.0470
+
+🧠 Trainer-State:
+  current_n_shots: 30
+  last_epoch_avg_loss: 0.3336094208766872
+  highest_loss_recorded: 0.34605530982178045
+  loss_at_last_peak: 0.34605530982178045
+  persisting_after_peak: True
+
+===== Analyse vom 2025-04-18T21:35:17 =====
+Checkpoint: quantum_arona_checkpoint_epoch_10.json
+
+🔎 Top 5 aktivierte Knoten:
+  Simulatrix Neuralis: 0.5833
+  Cortex Criticus: 0.5667
+  Philosophie: 0.5667
+  Meta Cognitio: 0.5333
+  Ethik: 0.5333
+
+🔗 Top 5 Hebb-Verbindungen:
+  Limbus Affektus -> Cortex Criticus: 0.9940
+  Limbus Affektus -> Cortex Creativus: 0.2034
+  Ethik -> Cortex Criticus: 0.1864
+  Meta Cognitio -> Limbus Affektus: 0.1817
+  Technologie -> Cortex Creativus: 0.0384
+
+🧠 Trainer-State:
+  current_n_shots: 30
+  last_epoch_avg_loss: 0.3342825613061248
+  highest_loss_recorded: 0.34605530982178045
+  loss_at_last_peak: 0.34605530982178045
+  persisting_after_peak: True

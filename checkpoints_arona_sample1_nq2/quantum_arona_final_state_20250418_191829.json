@@ -1,0 +1,367 @@
+{
+  "version": "quantum_arona_v1_checkpoint",
+  "config": {
+    "num_qubits_per_node": 2,
+    "simulation_shots": 30,
+    "training_epochs": 10,
+    "learning_rate_classical": 0.01,
+    "learning_rate_quantum": 0.005,
+    "dataset_files": [
+      "./training_data/sample1.txt",
+      "./training_data/ethics_ai.md",
+      "./training_data/philosophy_basics.txt"
+    ],
+    "chunk_size": 450,
+    "chunk_overlap": 100,
+    "embedding_dim": 256,
+    "checkpoint_dir": "./checkpoints_arona_sample1_nq2",
+    "log_db_path": "training_arona_sample1_nq2.db",
+    "auto_load_latest_checkpoint": true,
+    "feedback_weight_activation": 0.6,
+    "feedback_weight_emotion": 0.4,
+    "update_weight_activation_error": 0.7,
+    "update_weight_emotion_error": 0.3,
+    "arousal_error_weight_rz": 0.2,
+    "dominance_error_weight_rz": 0.2,
+    "enable_dynamic_shots": true,
+    "stagnation_threshold_loss": 0.005,
+    "shots_increase_factor": 1.5,
+    "shots_decrease_factor": 0.95,
+    "max_simulation_shots": 50,
+    "min_simulation_shots": 3,
+    "jump_rate_threshold_for_shot_decrease": 0.1,
+    "loss_improvement_threshold_for_jump": -0.01,
+    "feedback_lr_scaling_factor": 0.5,
+    "enable_perturbation": true,
+    "perturbation_std_dev": 0.03,
+    "randomize_shots": true,
+    "shot_random_min": -1,
+    "shot_random_max": 2,
+    "enable_jump_boost": true,
+    "jump_threshold_high": 2,
+    "jump_boost_lr_factor_high": 1.4,
+    "jump_boost_lr_factor_low": 1.1,
+    "jump_lr_dampen_factor": 0.98,
+    "enable_variance_trigger": true,
+    "variance_threshold_low": 0.5,
+    "use_hebbian_learning": true,
+    "hebb_history_window": 3,
+    "hebb_threshold_high": 0.55,
+    "hebb_threshold_low": 0.3,
+    "hebb_reg_factor": 0.001,
+    "activation_history_len": 50,
+    "log_interval_chunks": 100,
+    "network_structure": {
+      "nodes": [
+        {
+          "label": "Limbus Affektus",
+          "class": "LimbusAffektus",
+          "num_qubits": 2
+        },
+        {
+          "label": "Meta Cognitio",
+          "class": "MetaCognitio",
+          "num_qubits": 2
+        },
+        {
+          "label": "Cortex Criticus",
+          "class": "CortexCriticus",
+          "num_qubits": 2
+        },
+        {
+          "label": "Cortex Creativus",
+          "class": "CortexCreativus",
+          "num_qubits": 2
+        },
+        {
+          "label": "Simulatrix Neuralis",
+          "class": "SimulatrixNeuralis",
+          "num_qubits": 2
+        },
+        {
+          "label": "Cortex Socialis",
+          "class": "CortexSocialis",
+          "num_qubits": 2
+        },
+        {
+          "label": "Philosophie",
+          "class": "MemoryNode",
+          "num_qubits": 2
+        },
+        {
+          "label": "Ethik",
+          "class": "MemoryNode",
+          "num_qubits": 2
+        },
+        {
+          "label": "Technologie",
+          "class": "MemoryNode",
+          "num_qubits": 2
+        },
+        {
+          "label": "Bewusstsein",
+          "class": "MemoryNode",
+          "num_qubits": 2
+        },
+        {
+          "label": "Ziel_Rationalitaet",
+          "class": "ValueNode",
+          "initial_value": 0.6
+        },
+        {
+          "label": "Ziel_Empathie",
+          "class": "ValueNode",
+          "initial_value": 0.4
+        }
+      ],
+      "connections": [
+        {
+          "source": "Philosophie",
+          "target": "Meta Cognitio",
+          "weight": 0.3
+        },
+        {
+          "source": "Ethik",
+          "target": "Cortex Criticus",
+          "weight": 0.5
+        },
+        {
+          "source": "Technologie",
+          "target": "Cortex Creativus",
+          "weight": 0.4
+        },
+        {
+          "source": "Limbus Affektus",
+          "target": "Cortex Creativus"
+        },
+        {
+          "source": "Limbus Affektus",
+          "target": "Cortex Criticus"
+        },
+        {
+          "source": "Meta Cognitio",
+          "target": "Limbus Affektus"
+        },
+        {
+          "source": "Ziel_Rationalitaet",
+          "target": "Meta Cognitio",
+          "weight": 0.6
+        },
+        {
+          "source": "Ziel_Empathie",
+          "target": "Limbus Affektus",
+          "weight": 0.5
+        }
+      ]
+    }
+  },
+  "nodes": [
+    {
+      "label": "Limbus Affektus",
+      "class": "LimbusAffektus",
+      "activation": 0.0,
+      "neuron_type": "interneuron",
+      "is_quantum": true,
+      "num_qubits": 2,
+      "q_params": [
+        0.15609891311800214,
+        0.1300293155877341,
+        0.375979498883412,
+        3.133138704300951
+      ]
+    },
+    {
+      "label": "Meta Cognitio",
+      "class": "MetaCognitio",
+      "activation": 0.0,
+      "neuron_type": "interneuron",
+      "is_quantum": true,
+      "num_qubits": 2,
+      "q_params": [
+        0.9402429328104668,
+        0.475564703746457,
+        2.5520421077511584,
+        1.7481151417594205
+      ]
+    },
+    {
+      "label": "Cortex Criticus",
+      "class": "CortexCriticus",
+      "activation": 0.0,
+      "neuron_type": "inhibitory",
+      "is_quantum": true,
+      "num_qubits": 2,
+      "q_params": [
+        2.2715505362638453,
+        1.466164044154559,
+        0.07585664666398449,
+        0.39655522653460146
+      ]
+    },
+    {
+      "label": "Cortex Creativus",
+      "class": "CortexCreativus",
+      "activation": 0.0,
+      "neuron_type": "excitatory",
+      "is_quantum": true,
+      "num_qubits": 2,
+      "q_params": [
+        0.19485920088842604,
+        2.205675169628315,
+        2.636176298557981,
+        1.3173881866051584
+      ]
+    },
+    {
+      "label": "Simulatrix Neuralis",
+      "class": "SimulatrixNeuralis",
+      "activation": 0.0,
+      "neuron_type": "excitatory",
+      "is_quantum": true,
+      "num_qubits": 2,
+      "q_params": [
+        0.8361504902215455,
+        2.0508344070519486,
+        1.0659119512584383,
+        0.18705582865021303
+      ]
+    },
+    {
+      "label": "Cortex Socialis",
+      "class": "CortexSocialis",
+      "activation": 0.0,
+      "neuron_type": "excitatory",
+      "is_quantum": true,
+      "num_qubits": 2,
+      "q_params": [
+        2.8596557282138404,
+        1.261919278005031,
+        0.6847130534675273,
+        1.4356922688061544
+      ]
+    },
+    {
+      "label": "Philosophie",
+      "class": "MemoryNode",
+      "activation": 0.0,
+      "neuron_type": "excitatory",
+      "is_quantum": true,
+      "num_qubits": 2,
+      "q_params": [
+        2.429907594884129,
+        2.3634656799460556,
+        1.2173109060520273,
+        2.3991380399478497
+      ]
+    },
+    {
+      "label": "Ethik",
+      "class": "MemoryNode",
+      "activation": 0.0,
+      "neuron_type": "excitatory",
+      "is_quantum": true,
+      "num_qubits": 2,
+      "q_params": [
+        2.7172753848418583,
+        2.588463547270322,
+        1.8977333994250183,
+        2.401021066640917
+      ]
+    },
+    {
+      "label": "Technologie",
+      "class": "MemoryNode",
+      "activation": 0.0,
+      "neuron_type": "excitatory",
+      "is_quantum": true,
+      "num_qubits": 2,
+      "q_params": [
+        2.180272074213394,
+        1.43096579868096,
+        1.715421627819148,
+        0.41846239867495144
+      ]
+    },
+    {
+      "label": "Bewusstsein",
+      "class": "MemoryNode",
+      "activation": 0.0,
+      "neuron_type": "excitatory",
+      "is_quantum": true,
+      "num_qubits": 2,
+      "q_params": [
+        1.318264557214554,
+        1.0272039042298822,
+        0.3741853520071586,
+        1.0969001905691538
+      ]
+    },
+    {
+      "label": "Ziel_Rationalitaet",
+      "class": "ValueNode",
+      "activation": 0.6,
+      "neuron_type": "excitatory",
+      "is_quantum": false,
+      "num_qubits": 0
+    },
+    {
+      "label": "Ziel_Empathie",
+      "class": "ValueNode",
+      "activation": 0.4,
+      "neuron_type": "excitatory",
+      "is_quantum": false,
+      "num_qubits": 0
+    }
+  ],
+  "connections": [
+    {
+      "source": "Limbus Affektus",
+      "target": "Cortex Creativus",
+      "weight": 0.08424278884604021
+    },
+    {
+      "source": "Limbus Affektus",
+      "target": "Cortex Criticus",
+      "weight": 0.06661407371608731
+    },
+    {
+      "source": "Meta Cognitio",
+      "target": "Limbus Affektus",
+      "weight": 0.1768946476494247
+    },
+    {
+      "source": "Philosophie",
+      "target": "Meta Cognitio",
+      "weight": 0.3
+    },
+    {
+      "source": "Ethik",
+      "target": "Cortex Criticus",
+      "weight": 0.5
+    },
+    {
+      "source": "Technologie",
+      "target": "Cortex Creativus",
+      "weight": 0.4
+    },
+    {
+      "source": "Ziel_Rationalitaet",
+      "target": "Meta Cognitio",
+      "weight": 0.6
+    },
+    {
+      "source": "Ziel_Empathie",
+      "target": "Limbus Affektus",
+      "weight": 0.5
+    }
+  ],
+  "emotion_state": {
+    "pleasure": 0.0,
+    "arousal": 0.0,
+    "dominance": 0.0
+  },
+  "trainer_state": {
+    "current_n_shots": 30,
+    "last_epoch_avg_loss": null
+  }
+}
