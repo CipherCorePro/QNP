@@ -1,0 +1,43 @@
+{
+  "num_qubits_per_node": 4,
+  "simulation_shots": 15,
+  "training_epochs": 5,
+  "learning_rate_classical": 0.008,
+  "learning_rate_quantum": 0.002,
+  "dataset_files": [
+    "./training_data/philosophy_basics.txt",
+    "./training_data/ethics_ai.md"
+  ],
+  "chunk_size": 450,
+  "chunk_overlap": 50,
+  "embedding_dim": 64,
+  "checkpoint_dir": "./checkpoints_arona_run1",
+  "log_db_path": "training_arona_run1.db",
+  "auto_load_latest_checkpoint": true,
+  "network_structure": {
+    "nodes": [
+      {"label": "Limbus Affektus", "class": "LimbusAffektus", "num_qubits": 4},
+      {"label": "Meta Cognitio", "class": "MetaCognitio", "num_qubits": 4},
+      {"label": "Cortex Criticus", "class": "CortexCriticus", "num_qubits": 4},
+      {"label": "Cortex Creativus", "class": "CortexCreativus", "num_qubits": 4},
+      {"label": "Simulatrix Neuralis", "class": "SimulatrixNeuralis", "num_qubits": 4},
+      {"label": "Cortex Socialis", "class": "CortexSocialis", "num_qubits": 4},
+      {"label": "Philosophie", "class": "MemoryNode", "num_qubits": 4},
+      {"label": "Ethik", "class": "MemoryNode", "num_qubits": 4},
+      {"label": "Technologie", "class": "MemoryNode", "num_qubits": 4},
+      {"label": "Bewusstsein", "class": "MemoryNode", "num_qubits": 4},
+      {"label": "Ziel_Rationalitaet", "class": "ValueNode", "initial_value": 0.6},
+      {"label": "Ziel_Empathie", "class": "ValueNode", "initial_value": 0.4}
+    ],
+    "connections": [
+      {"source": "Philosophie", "target": "Meta Cognitio", "weight": 0.3},
+      {"source": "Ethik", "target": "Cortex Criticus", "weight": 0.5},
+      {"source": "Technologie", "target": "Cortex Creativus", "weight": 0.4},
+      {"source": "Limbus Affektus", "target": "Cortex Creativus"},
+      {"source": "Limbus Affektus", "target": "Cortex Criticus"},
+      {"source": "Meta Cognitio", "target": "Limbus Affektus"},
+      {"source": "Ziel_Rationalitaet", "target": "Meta Cognitio", "weight": 0.6},
+      {"source": "Ziel_Empathie", "target": "Limbus Affektus", "weight": 0.5}
+    ]
+  }
+}
