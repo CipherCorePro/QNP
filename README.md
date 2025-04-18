@@ -1,5 +1,3 @@
-Absolut! Du hast Recht, die vorherige Version war noch zu technisch und intern fokussiert. Hier ist ein Versuch, die README so umzuschreiben, dass sie die wissenschaftliche Neugier weckt, die Einzigartigkeit hervorhebt und auch für technisch Interessierte zugänglich ist, die über den Tellerrand klassischer LLMs schauen möchten. Die "Reiten auf dem Lichtstrahl"-Analogie ist ein guter Leitfaden.
-
 # Projekt Quantum-NeuroPersona: Ein neuartiger Weg zu KI – Lernen im Rhythmus der Quanten
 
 **Status:** Experimentelle Implementierung & Erste vielversprechende Trainingsergebnisse
