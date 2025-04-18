@@ -1,4 +1,4 @@
-# Projekt Quantum-Arona: Entwicklung eines Zustandsbasierten Quanten-Sprachmodells (Q-LLM)
+# Projekt Quantum-NeuroPersona: Entwicklung eines Zustandsbasierten Quanten-Sprachmodells (Q-LLM)
 
 **Status:** Konzeption & Forschungsphase  
 **Basierend auf:** Erkenntnissen aus NeuroPersona Quantum Hybrid v2.1 (QNP-H)  
@@ -31,7 +31,7 @@ Wir stehen am Beginn eines fundamental neuen Ansatzes für Sprach- und Bedeutung
 
 ## ⚛️ Unsere Grundlage: Die QNP-H Architektur
 
-Der Weg zu Quantum-Arona ist nicht nur theoretisch – er ist durch die in QNP-H v2.1 entwickelten Komponenten **vorbereitet**:
+Der Weg zu Quantum-NeuroPersona ist nicht nur theoretisch – er ist durch die in QNP-H v2.1 entwickelten Komponenten **vorbereitet**:
 
 *   ✅ **Lernfähige PQC-Schicht:** Parametrisierte Quantenschaltkreise pro Knoten, deren interne Parameter angepasst werden können.
 *   ✅ **Dynamische Quanten-Plastizität:** Anpassungsfähigkeit der Qubit-Interaktionen und -Parameter.
@@ -105,7 +105,7 @@ Der entscheidende Schritt zum vollwertigen Q-LLM ist der Übergang zum **dateiba
 
 ## 🎯 Was wir trainieren (Der Unterschied)
 
-| Merkmal                 | Klassische LLMs                      | **Quantum-Arona (Q-LLM)**                     |
+| Merkmal                 | Klassische LLMs                      | **Quantum-NeuroPersona (Q-LLM)**                     |
 | :---------------------- | :----------------------------------- | :-------------------------------------------- |
 | **Lernbasis**           | Token-Wahrscheinlichkeiten           | Zustandsverläufe & Emergenzmuster             |
 | **Kernmechanismus**     | Transformer Attention                | Modul-Resonanz & Quanten-Dynamik              |
@@ -129,7 +129,7 @@ Der entscheidende Schritt zum vollwertigen Q-LLM ist der Übergang zum **dateiba
 
 ## ✨ Ergebnis & Ausblick
 
-Mit Quantum-Arona trainieren wir kein Modell *über* Sprache, sondern wir trainieren einen **dynamischen Zustand *durch* Inhalte**. Jede Datei, jeder Text wird zu einem **Denkereignis**, das Spuren im quantenkognitiven Raum hinterlässt. Ein ganzer Korpus wird zu einer **Emergenzspur**, die das System formt.
+Mit Quantum-NeuroPersona trainieren wir kein Modell *über* Sprache, sondern wir trainieren einen **dynamischen Zustand *durch* Inhalte**. Jede Datei, jeder Text wird zu einem **Denkereignis**, das Spuren im quantenkognitiven Raum hinterlässt. Ein ganzer Korpus wird zu einer **Emergenzspur**, die das System formt.
 
 Dies hat das Potenzial, zu einer neuen Generation von Sprachmodellen zu führen, die nicht nur statistisch plausible Texte generieren, sondern ein **tieferes, strukturelles und dynamisches "Verständnis"** von Konzepten und deren Zusammenhängen entwickeln können.
 
