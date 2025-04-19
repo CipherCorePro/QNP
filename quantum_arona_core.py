@@ -337,6 +337,7 @@ INITIAL_EMOTION_STATE = {dim: 0.0 for dim in EMOTION_DIMENSIONS}
 EMOTION_UPDATE_RATE = 0.03
 EMOTION_VOLATILITY = 0.02
 EMOTION_DECAY_TO_NEUTRAL = 0.05
+CURRENT_EMOTION_STATE = INITIAL_EMOTION_STATE.copy()
 # CURRENT_EMOTION_STATE wird jetzt im QuantumAronaModel verwaltet
 
 class LimbusAffektus(Node):
@@ -793,8 +794,14 @@ class StateEmbedder:
 # # 6. Trainings-Loop & Modell-Management (Q-LLM spezifisch)
 # ########################################################################
 
+# -*- coding: utf-8 -*-
+# Filename: quantum_arona_core.py (Auszug: QuantumAronaModel komplett)
+# ... (Alle Imports wie zuvor) ...
+
+
+
 class QuantumAronaModel:
-    """Kapselt das gesamte Netzwerk und seine Zustände."""
+    """Kapselt das gesamte Netzwerk und seine Zustände, inklusive Inferenz-Logik."""
     def __init__(self, config: Dict):
         self.config = config
         Node.DEFAULT_NUM_QUBITS = config.get("num_qubits_per_node", 4)
@@ -802,10 +809,14 @@ class QuantumAronaModel:
         self.num_qubits_per_node = Node.DEFAULT_NUM_QUBITS
         self.nodes: List[Node] = []
         self.node_map: Dict[str, Node] = {}
+        # Initialisiere globalen Zustand hier, wird durch load_state ggf. überschrieben
         self.global_emotion_state = INITIAL_EMOTION_STATE.copy()
-        global CURRENT_EMOTION_STATE; CURRENT_EMOTION_STATE = self.global_emotion_state.copy()
-        self.history: Dict[str, deque] = {}
+        global CURRENT_EMOTION_STATE
+        CURRENT_EMOTION_STATE = self.global_emotion_state.copy()
+        self.history: Dict[str, deque] = {} # Für zukünftige detailliertere Analysen
         self._initialize_network(config.get("network_structure", {}))
+
+    # ... (_initialize_network, calculate_classic_input_sum, step, apply_text_input, apply_updates, apply_hebbian_learning, get_state, load_state, save_model_state, inference_step, _get_most_active_memory_node_label bleiben wie im vorherigen Code) ...
     def _initialize_network(self, structure_config: Dict):
         print("Initializing Quantum Arona Network...")
         node_configs = structure_config.get("nodes", [])
@@ -821,6 +832,8 @@ class QuantumAronaModel:
                 params = {k: v for k, v in node_conf.items() if k not in ['label', 'class']}
                 if 'num_qubits' not in params and node_class != ValueNode: params['num_qubits'] = self.num_qubits_per_node
                 node_instance = node_class(label=label, **params)
+                # Stelle sicher, dass die History-Länge korrekt gesetzt wird
+                node_instance.activation_history = deque(maxlen=Node.DEFAULT_ACTIVATION_HISTORY_LEN)
                 self.nodes.append(node_instance); created_nodes[label] = node_instance
             except Exception as e: print(f"ERROR creating node {label}: {e}"); traceback.print_exc()
         self.node_map = created_nodes; print(f"Created {len(self.nodes)} nodes.")
@@ -834,28 +847,32 @@ class QuantumAronaModel:
                  if source_label not in self.node_map: print(f"Warning: Skipping connection from unknown source '{source_label}'.")
                  if target_label not in self.node_map: print(f"Warning: Skipping connection to unknown target '{target_label}'.")
         print(f"Added {connections_added} connections.")
+
     def calculate_classic_input_sum(self, emotion_factors: Dict[str, float]):
         for node in self.nodes: node.activation_sum = 0.0
         signal_modulation = emotion_factors.get("signal_modulation", 1.0)
         for source_node in self.nodes:
-            current_activation = float(source_node.activation) if np.isfinite(source_node.activation) else 0.0
+            current_activation = float(source_node.activation) if isinstance(source_node.activation, (float, np.number)) and np.isfinite(source_node.activation) else 0.0
             if not hasattr(source_node, 'connections') or current_activation < 0.01: continue
-            is_inhibitory = getattr(source_node, 'neuron_type', '') == "inhibitory"
+            is_inhibitory = getattr(source_node, 'neuron_type', 'excitatory') == "inhibitory"
             base_signal = current_activation * signal_modulation
             for connection in source_node.connections:
                 target_node = connection.target_node
                 if not target_node or not hasattr(target_node, 'activation_sum'): continue
                 conn_weight = float(connection.weight)
                 signal_strength = base_signal * conn_weight * (-1.5 if is_inhibitory else 1.0)
-                current_target_sum = float(target_node.activation_sum) if np.isfinite(target_node.activation_sum) else 0.0
+                current_target_sum = float(target_node.activation_sum) if isinstance(target_node.activation_sum, (float, np.number)) and np.isfinite(target_node.activation_sum) else 0.0
                 target_node.activation_sum = float(np.clip(current_target_sum + signal_strength, -50.0, 50.0))
+
     def step(self, input_chunk: Optional[str] = None, context: Optional[Dict] = None, n_shots: int = 5):
         global CURRENT_EMOTION_STATE
         if context:
             emotion_context = context.get('emotion')
             if emotion_context and isinstance(emotion_context, dict):
                 for dim, value in emotion_context.items():
-                    if dim in self.global_emotion_state: self.global_emotion_state[dim] = float(np.clip(value, -1.0, 1.0))
+                    if dim in self.global_emotion_state:
+                         val_f = float(value) if isinstance(value, (float, int, np.number)) and np.isfinite(value) else 0.0
+                         self.global_emotion_state[dim] = float(np.clip(val_f, -1.0, 1.0))
                 limbus = self.node_map.get("Limbus Affektus");
                 if isinstance(limbus, LimbusAffektus): limbus.emotion_state = self.global_emotion_state.copy()
                 CURRENT_EMOTION_STATE = self.global_emotion_state.copy()
@@ -863,11 +880,12 @@ class QuantumAronaModel:
             if isinstance(target_values, dict):
                 for label, target_val in target_values.items():
                     if label in self.node_map and isinstance(self.node_map[label], ValueNode):
-                        self.node_map[label].activation = float(np.clip(target_val, 0.0, 1.0))
+                        val_f = float(target_val) if isinstance(target_val, (float, int, np.number)) and np.isfinite(target_val) else 0.5
+                        self.node_map[label].activation = float(np.clip(val_f, 0.0, 1.0))
             if input_chunk: self.apply_text_input(input_chunk)
         limbus = self.node_map.get("Limbus Affektus"); emotion_factors = limbus.get_emotion_influence_factors() if isinstance(limbus, LimbusAffektus) else {}
         self.calculate_classic_input_sum(emotion_factors)
-        for node in self.nodes: node.calculate_activation(n_shots=n_shots) # Activation history is filled here
+        for node in self.nodes: node.calculate_activation(n_shots=n_shots)
         module_outputs: Dict[str, deque] = {}
         if isinstance(limbus, LimbusAffektus):
             new_emotion_state = limbus.update_emotion_state(self.nodes, module_outputs)
@@ -881,16 +899,31 @@ class QuantumAronaModel:
             module_outputs.setdefault("Cortex Criticus", deque(maxlen=10)).append(evaluations)
         extractor = StateExtractor(self.nodes); current_network_state = extractor.extract_current_state()
         return current_network_state
+
     def apply_text_input(self, text_chunk: str):
         try:
-            words = set(text_chunk.lower().split())
-            for node in self.nodes:
-                if isinstance(node, MemoryNode) and hasattr(node, 'label'):
-                    node_label_lower = node.label.lower()
-                    if node_label_lower in words or f"{node_label_lower}s" in words:
+            prompt_lower = text_chunk.lower()
+            activated_nodes = 0
+            for node_label, node in self.node_map.items():
+                if isinstance(node, (MemoryNode, CortexCreativus, CortexCriticus, SimulatrixNeuralis, MetaCognitio, CortexSocialis)):
+                    node_label_lower = node_label.lower()
+                    match_found = False
+                    if len(node_label_lower) > 3:
+                        if node_label_lower in prompt_lower:
+                            match_found = True
+                    if not match_found:
+                         for word in prompt_lower.split():
+                             if word.startswith(node_label_lower):
+                                  match_found = True
+                                  break
+                    if match_found:
                         activation_sum_f = float(node.activation_sum) if isinstance(node.activation_sum, (float, np.number)) and np.isfinite(node.activation_sum) else 0.0
-                        node.activation_sum = activation_sum_f + 1.5 # Boost input
+                        node.activation_sum = float(np.clip(activation_sum_f + 3.0, -50.0, 50.0))
+                        activated_nodes += 1
+            if activated_nodes > 0: print(f"   (Prompt hat {activated_nodes} Knoten initial stärker aktiviert)")
+            else: print("   (Prompt enthielt keine direkten Keywords für Knotenaktivierung)")
         except Exception as e: print(f"WARNUNG: Fehler in apply_text_input: {e}")
+
     def apply_updates(self, updates: Dict[str, Any]):
         weight_updates = updates.get("weight_updates", {}); q_param_updates = updates.get("q_param_updates", {})
         if isinstance(weight_updates, dict):
@@ -903,9 +936,8 @@ class QuantumAronaModel:
         if isinstance(q_param_updates, dict):
             for node_label, delta_q in q_param_updates.items():
                 if node_label in self.node_map and isinstance(delta_q, np.ndarray): update_quantum_params(self.node_map[node_label], delta_q)
-    # *** NEUE METHODE ***
+
     def apply_hebbian_learning(self, lr_classical: float, lr_quantum: float):
-        """Wendet die quantum-modulierte Hebb'sche Lernregel auf alle Verbindungen an."""
         for node in self.nodes:
             if hasattr(node, 'connections'):
                 for conn in node.connections:
@@ -917,32 +949,38 @@ class QuantumAronaModel:
                         activation_threshold_low=self.config.get("hebb_threshold_low", 0.30),
                         reg_factor=self.config.get("hebb_reg_factor", 0.001)
                     )
+
     def get_state(self) -> Dict[str, Any]:
         nodes_state, connections_state = [], []
         for node in self.nodes:
             try:
-                n_state = {"label": node.label, "class": type(node).__name__, "activation": float(node.activation) if np.isfinite(node.activation) else 0.0, "neuron_type": node.neuron_type, "is_quantum": node.is_quantum, "num_qubits": node.num_qubits}
+                n_state = {"label": node.label, "class": type(node).__name__, "activation": float(node.activation) if np.isfinite(node.activation) else 0.0, "activation_history_len": node.activation_history.maxlen, "neuron_type": node.neuron_type, "is_quantum": node.is_quantum, "num_qubits": node.num_qubits}
                 if node.is_quantum and node.q_system: n_state["q_params"] = [float(p) for p in node.q_system.get_params()]
+                if isinstance(node, LimbusAffektus): n_state["emotion_state"] = node.emotion_state.copy()
+                if isinstance(node, MetaCognitio): n_state["strategy_state"] = node.strategy_state.copy()
                 nodes_state.append(n_state)
                 if hasattr(node, 'connections'):
                     for conn in node.connections:
                         if conn.target_node and hasattr(conn.target_node, 'label'): connections_state.append({"source": node.label, "target": conn.target_node.label, "weight": float(conn.weight) if np.isfinite(conn.weight) else 0.0})
             except Exception as e: print(f"ERROR getting state for node {getattr(node, 'label', 'UNKNOWN')}: {e}")
         return {"version": "quantum_arona_v1_checkpoint", "config": self.config, "nodes": nodes_state, "connections": connections_state, "emotion_state": self.global_emotion_state}
+
     def load_state(self, state_data: Dict[str, Any]):
         print("Loading model state...")
-        if state_data.get("version") != "quantum_arona_v1_checkpoint": print(f"Warning: Checkpoint version mismatch.")
-        loaded_nodes = {n['label']: n for n in state_data.get('nodes', []) if 'label' in n}
-        loaded_connections = {(c['source'], c['target']): c.get('weight', 0.0) for c in state_data.get('connections', []) if 'source' in c and 'target' in c}
         self.config = state_data.get("config", self.config)
         Node.DEFAULT_NUM_QUBITS = self.config.get("num_qubits_per_node", 4)
         self.num_qubits_per_node = Node.DEFAULT_NUM_QUBITS
         Node.DEFAULT_ACTIVATION_HISTORY_LEN = self.config.get("activation_history_len", 50)
+        if state_data.get("version") != "quantum_arona_v1_checkpoint" and state_data.get("model_type") != "QuantumArona_TrainedModel_v1.1": print(f"Warning: Checkpoint/Model version mismatch.")
+        loaded_nodes_data = {n['label']: n for n in state_data.get('nodes', []) if 'label' in n}
+        loaded_connections = {(c['source'], c['target']): c.get('weight', 0.0) for c in state_data.get('connections', []) if 'source' in c and 'target' in c}
+        if not self.nodes: self._initialize_network(self.config.get("network_structure", {}))
         for node_label, node in self.node_map.items():
-            if node_label in loaded_nodes:
-                n_data = loaded_nodes[node_label]
+            if node_label in loaded_nodes_data:
+                n_data = loaded_nodes_data[node_label]
                 node.activation = float(n_data.get('activation', 0.0)) if np.isfinite(n_data.get('activation', 0.0)) else 0.0
-                if hasattr(node, 'activation_history'): node.activation_history = deque(maxlen=n_data.get('activation_history_len', Node.DEFAULT_ACTIVATION_HISTORY_LEN))
+                history_len = n_data.get('activation_history_len', Node.DEFAULT_ACTIVATION_HISTORY_LEN)
+                if hasattr(node, 'activation_history'): node.activation_history = deque(maxlen=history_len)
                 if node.is_quantum and node.q_system and 'q_params' in n_data:
                     try:
                         params_list = n_data['q_params']
@@ -951,22 +989,191 @@ class QuantumAronaModel:
                              else: print(f"WARNUNG: QParams Anzahl mismatch für {node.label}.")
                         elif params_list is not None: print(f"WARNUNG: q_params für {node.label} keine Liste.")
                     except Exception as e: print(f"Error loading QParams for {node.label}: {e}")
-                if hasattr(node, 'connections'):
-                     for conn in node.connections:
-                         if conn.target_node and hasattr(conn.target_node, 'label'):
-                             conn_key = (node.label, conn.target_node.label)
-                             if conn_key in loaded_connections: conn.weight = float(loaded_connections[conn_key]) if np.isfinite(loaded_connections[conn_key]) else 0.0
+                if isinstance(node, LimbusAffektus) and 'emotion_state' in n_data: node.emotion_state = n_data['emotion_state'].copy()
+                if isinstance(node, MetaCognitio) and 'strategy_state' in n_data: node.strategy_state = n_data['strategy_state'].copy()
+        for source_node in self.nodes:
+            if hasattr(source_node, 'connections'):
+                 for conn in source_node.connections:
+                     if conn.target_node and hasattr(conn.target_node, 'label'):
+                         conn_key = (source_node.label, conn.target_node.label)
+                         if conn_key in loaded_connections:
+                             weight_val = loaded_connections[conn_key]
+                             conn.weight = float(weight_val) if isinstance(weight_val, (float, int, np.number)) and np.isfinite(weight_val) else 0.0
+                             conn.weight = np.clip(conn.weight, 0.0, 1.0)
         self.global_emotion_state = state_data.get('emotion_state', INITIAL_EMOTION_STATE.copy())
         limbus = self.node_map.get("Limbus Affektus");
         if isinstance(limbus, LimbusAffektus): limbus.emotion_state = self.global_emotion_state.copy()
         global CURRENT_EMOTION_STATE; CURRENT_EMOTION_STATE = self.global_emotion_state.copy()
-        print("Model state loaded.")
+        print("Modellzustand erfolgreich geladen.")
 
+    def save_model_state(self, filename: str):
+        """Speichert den reinen Modellzustand (ohne Trainer-Infos) für die Inferenz."""
+        try:
+            os.makedirs(os.path.dirname(filename), exist_ok=True)
+            state_data = self.get_state()
+            if "trainer_state" in state_data: del state_data["trainer_state"]
+            state_data["model_type"] = "QuantumArona_TrainedModel_v1.1"
+            with open(filename, 'w', encoding='utf-8') as f:
+                json.dump(state_data, f, indent=2, ensure_ascii=False)
+            print(f"Modellzustand erfolgreich gespeichert: {filename}")
+        except Exception as e:
+            print(f"ERROR saving model state {filename}: {e}")
+            traceback.print_exc()
 
+    def inference_step(self, n_shots: int) -> Optional[str]:
+        """Führt einen Inferenzschritt durch (OHNE Lernen) und gibt den dominanten Memory-Knoten zurück."""
+        limbus = self.node_map.get("Limbus Affektus")
+        emotion_factors = limbus.get_emotion_influence_factors() if isinstance(limbus, LimbusAffektus) else {}
+        self.calculate_classic_input_sum(emotion_factors)
+        for node in self.nodes: node.calculate_activation(n_shots=n_shots)
+        module_outputs: Dict[str, deque] = {}
+        if isinstance(limbus, LimbusAffektus):
+            new_emotion_state = limbus.update_emotion_state(self.nodes, module_outputs)
+            self.global_emotion_state = new_emotion_state
+            global CURRENT_EMOTION_STATE; CURRENT_EMOTION_STATE = new_emotion_state
+        dominant_node_label = self._get_most_active_memory_node_label(threshold=0.4)
+        return dominant_node_label
+
+    def _get_most_active_memory_node_label(self, threshold: float = 0.1) -> Optional[str]:
+        """Findet den MemoryNode mit der höchsten Aktivierung über einem Schwellwert."""
+        max_activation = -1.0
+        most_active_label = None
+        for node in self.nodes:
+            if isinstance(node, MemoryNode):
+                 act = float(node.activation) if isinstance(node.activation, (float, np.number)) and np.isfinite(node.activation) else 0.0
+                 if act > threshold and act > max_activation:
+                     max_activation = act
+                     most_active_label = node.label
+        return most_active_label
+
+    # *** Version mit Vorlagen ***
+    def generate_text_from_thought_chain(self, thought_chain: List[str], original_prompt: str = "") -> str:
+        """
+        Generiert Text mithilfe von Vorlagen basierend auf der Konzeptkette,
+        dem ursprünglichen Prompt und Modulzuständen.
+        VERBESSERT: Versucht Prompt-Kontext besser einzubinden.
+        """
+        if not thought_chain: return "[Keine klaren Konzepte während der Inferenz gefunden.]"
+        processed_chain = []
+        last_concept = None
+        for concept in thought_chain:
+            if concept and concept != last_concept:
+                 processed_chain.append(concept); last_concept = concept
+        if not processed_chain: return "[Keine stabilen Konzepte über Schwelle gefunden.]"
+        concept_counts = Counter(processed_chain)
+        most_common_concepts = concept_counts.most_common(3)
+        unique_concepts = list(dict.fromkeys(processed_chain))
+        first = processed_chain[0]
+        last = processed_chain[-1]
+        emotion_state = self.global_emotion_state
+        pleasure = emotion_state.get("pleasure", 0.0)
+        arousal = emotion_state.get("arousal", 0.0)
+        dominance = emotion_state.get("dominance", 0.0)
+        critic = self.node_map.get("Cortex Criticus")
+        critic_activation = float(getattr(critic, 'activation', 0.0)) if critic and np.isfinite(getattr(critic, 'activation', 0.0)) else 0.0
+        critic_active = critic_activation > 0.5
+        prompt_keywords_in_nodes = []
+        prompt_lower = original_prompt.lower()
+        for node_label in self.node_map:
+             if isinstance(self.node_map[node_label], MemoryNode):
+                 node_label_lower = node_label.lower()
+                 match_found = False
+                 if len(node_label_lower) > 3 and node_label_lower in prompt_lower: match_found = True
+                 if not match_found:
+                     for word in prompt_lower.split():
+                          if word.startswith(node_label_lower): match_found = True; break
+                 if match_found: prompt_keywords_in_nodes.append(node_label)
+        response_parts = []
+        prompt_ref_used = False
+        if prompt_keywords_in_nodes and prompt_keywords_in_nodes[0] == first:
+            response_parts.append(f"Ausgehend von Ihrer Frage zu '{first}':")
+            prompt_ref_used = True
+        elif prompt_keywords_in_nodes:
+             response_parts.append(f"Ihre Anfrage bezog sich auf '{', '.join(prompt_keywords_in_nodes)}'. Meine interne Analyse begann jedoch mit '{first}' und entwickelte sich wie folgt:")
+             prompt_ref_used = True
+        elif len(processed_chain) > 1 : response_parts.append(f"Meine Gedanken entwickelten sich von '{first}':")
+        else: response_parts.append(f"Im Zentrum meiner Überlegungen steht '{first}':")
+        if len(unique_concepts) == 1 and not prompt_ref_used: response_parts.append(f"Das Konzept '{first}' blieb durchgehend dominant.")
+        elif len(unique_concepts) > 1:
+            top_concept_str = most_common_concepts[0][0] if most_common_concepts else last
+            top_count = most_common_concepts[0][1] if most_common_concepts else 0
+            if top_count > len(processed_chain) * 0.4: response_parts.append(f"Obwohl verschiedene Themen berührt wurden, kristallisierte sich '{top_concept_str}' als häufigster Fokus heraus, endend bei '{last}'.")
+            elif len(unique_concepts) <= 4:
+                 concepts_str = "', '".join(unique_concepts[1:])
+                 response_parts.append(f"Es wurden die Themen '{concepts_str}' berührt, mit einem abschließenden Fokus auf '{last}'.")
+            else:
+                 mitte_index = len(processed_chain) // 2
+                 mitte = processed_chain[mitte_index] if mitte_index < len(processed_chain) else "verschiedenen Konzepten"
+                 if arousal > 0.7: response_parts.append(f"Ein sehr dynamischer Gedankengang führte von '{first}' über '{mitte}' schließlich zu '{last}'.")
+                 elif critic_active: response_parts.append(f"Nach eingehender Prüfung verschiedener Ideen, beginnend bei '{first}', kristallisierte sich '{last}' als relevantes Endkonzept heraus.")
+                 else: response_parts.append(f"Ausgehend von '{first}' wurde eine Kette von Konzepten bis hin zu '{last}' durchlaufen.")
+        if critic_active and len(unique_concepts) > 1:
+            critical_comment = random.choice(["Eine sorgfältige Abwägung der verschiedenen Aspekte scheint hier notwendig.", "Dies ist jedoch eine vielschichtige Angelegenheit.", "Eine kritische Perspektive legt nahe, dass..."])
+            response_parts.append(critical_comment)
+        if pleasure < -0.4: response_parts.append("Die assoziierte Tonalität ist eher ernst.")
+        elif pleasure > 0.6 and arousal > 0.5: response_parts.append("Dies scheint ein besonders stimulierender Gedanke zu sein!")
+        elif arousal > 0.75: response_parts.append("Das Thema erzeugt hohe interne Aktivität.")
+        elif dominance < 0.2 and len(unique_concepts) > 2 : response_parts.append("Die genaue Richtung ist hier noch nicht gefestigt.")
+        final_response = response_parts[0]
+        if len(response_parts) > 1:
+            for part in response_parts[1:]:
+                 if final_response.endswith(':'): final_response += " " + part[0].lower() + part[1:]
+                 elif final_response.endswith('.'): final_response += " " + part
+                 else: final_response += ". " + part
+                 if not final_response.endswith('.'): final_response += "."
+        return final_response
+
+# *** NEUE Top-Level Funktion für Arona-Inferenz ***
+def run_arona_inference(
+    prompt: str,
+    loaded_model: QuantumAronaModel,
+    inference_steps: int = 15,
+    n_shots_inference: int = 50
+    ) -> Tuple[str, List[str], Dict[str, float]]: # Gibt Arona-Text, Kette und Emotion zurück
+    """
+    Führt die Inferenz mit dem geladenen Quantum-Arona-Modell durch.
+    Gibt die generierte Textantwort, die Gedankenkette und den finalen Emotionszustand zurück.
+    """
+    if not loaded_model:
+         raise ValueError("Kein Modellobjekt übergeben")
+    if not isinstance(loaded_model, QuantumAronaModel):
+         raise ValueError("Ungültiges Modellobjekt übergeben")
+
+    print(f"Arona: Wende Prompt an: '{prompt}'")
+    try: loaded_model.apply_text_input(prompt)
+    except Exception as e: print(f"FEHLER beim Anwenden des Prompts: {e}"); raise
+
+    print(f"Arona: Simuliere {inference_steps} Denkschritte...")
+    thought_chain: List[str] = []
+    if TQDM_AVAILABLE: iterator = tqdm(range(inference_steps), desc="Arona Denkschritte", leave=False)
+    else: iterator = range(inference_steps)
+
+    try:
+        for step in iterator:
+            dominant_concept = loaded_model.inference_step(n_shots=n_shots_inference)
+            if dominant_concept:
+                thought_chain.append(dominant_concept)
+                if TQDM_AVAILABLE: iterator.set_postfix({"Fokus": dominant_concept})
+    except Exception as e:
+         print(f"FEHLER während der Arona-Inferenzschritte: {e}"); traceback.print_exc(); raise
+
+    print(f"Arona: Gedankenkette: {thought_chain}")
+
+    try:
+        arona_response_text = loaded_model.generate_text_from_thought_chain(thought_chain, original_prompt=prompt)
+        final_emotion = loaded_model.global_emotion_state.copy()
+    except Exception as e:
+        print(f"FEHLER bei der Arona-Textgenerierung: {e}"); traceback.print_exc()
+        arona_response_text = "[Fehler bei der Generierung der Arona-Antwort]"
+        final_emotion = INITIAL_EMOTION_STATE.copy()
+
+    return arona_response_text, thought_chain, final_emotion
+    
 class QuantumTrainer:
     """
     Orchestriert den Trainingsprozess für Quantum-Arona.
-    Implementiert sprung-induktives Lernen, Hebb'sches Lernen und Peak-Loss-Persistence.
+    Implementiert sprung-induktives Lernen, Hebb'sches Lernen
+    und die experimentelle "Loss Band Persistence"-Strategie.
     """
     def __init__(self, model: QuantumAronaModel, dataset_loader: DatasetLoader,
                  contextualizer: Contextualizer, state_embedder: StateEmbedder,
@@ -983,7 +1190,8 @@ class QuantumTrainer:
         self.base_lr_quantum = config.get("learning_rate_quantum", DEFAULT_QUANTUM_LR)
         self.base_n_shots = config.get("simulation_shots", 5)
         if self.base_n_shots <= 0: print("WARNUNG: simulation_shots <= 0. Setze auf 1."); self.base_n_shots = 1
-        self.epochs = config.get("training_epochs", 1)
+        # Korrektur: Epochen hier aus config holen, nicht hardcoden
+        self.epochs = config.get("training_epochs", 10) # Config-Wert verwenden
 
         # Konfiguration für dynamische Anpassungen & Sprünge
         self.enable_dynamic_shots = config.get("enable_dynamic_shots", True)
@@ -1016,12 +1224,13 @@ class QuantumTrainer:
         self.hebb_threshold_low = config.get("hebb_threshold_low", 0.30)     # Hebb Glättung
         self.hebb_reg_factor = config.get("hebb_reg_factor", 0.001)          # Hebb Glättung
 
-        # *** HIER: Fehlende Initialisierung für Peak Loss Persistence ***
-        self.peak_loss_tracking_enabled = config.get("peak_loss_tracking_enabled", True) # Strategie aktivieren?
-        self.highest_loss_recorded = float('-inf') # Höchster Loss bisher
-        self.loss_at_last_peak = float('-inf')     # Loss-Wert, der die letzte Persistenz ausgelöst hat
-        self.persisting_after_peak = False         # Flag: Sind wir im Halte-Modus?
-        # *** Ende fehlende Initialisierung ***
+        # --- *** NEU/GEÄNDERT: Variablen für Loss Band Persistence *** ---
+        self.loss_band_persistence_enabled = config.get("loss_band_persistence_enabled", True) # NEUE Strategie aktivieren?
+        self.highest_loss_recorded = float('-inf')       # Höchster Loss absolut jemals gesehen
+        self.loss_at_last_peak = float('-inf')           # Oberes Limit des aktuellen Haltebandes (wird durch neue Tiefs angepasst!)
+        self.lowest_loss_recorded_since_peak = float('inf') # Unteres Limit / Bester Wert seit letztem Peak
+        self.persisting_in_band = False                  # Flag: Sind wir im Halte-Band?
+        # --- Ende neue/geänderte Variablen ---
 
         # Zustandsvariablen (bereits vorhanden)
         self.current_n_shots = self.base_n_shots
@@ -1080,8 +1289,8 @@ class QuantumTrainer:
         """
         Führt eine Trainingsepoche durch, mit experimentellen Strategien.
         """
-        # HIER WIRD self.persisting_after_peak verwendet, muss also in __init__ definiert sein!
-        print(f"\n--- Starting Training Epoch {epoch_num}/{self.epochs} (Current Shots: {self.current_n_shots}, Persisting: {self.persisting_after_peak}) ---")
+        # Nutzt jetzt self.persisting_in_band für die Print-Ausgabe
+        print(f"\n--- Starting Training Epoch {epoch_num}/{self.epochs} (Current Shots: {self.current_n_shots}, Persisting: {self.persisting_in_band}) ---")
         chunk_generator = self.loader.generate_chunks()
         total_loss = 0.0; processed_chunks = 0
         self.jumps_in_epoch_count = 0
@@ -1099,8 +1308,8 @@ class QuantumTrainer:
             effective_shots = self.current_n_shots # Startwert für Shots in diesem Chunk
 
             try:
-                # Strategie 2: Randomisierte Shot-Zahl
-                if self.randomize_shots and not self.persisting_after_peak:
+                # Strategie 2: Randomisierte Shot-Zahl (Wird durch Loss Band Persistence überschrieben)
+                if self.randomize_shots and not self.persisting_in_band: # Checkt das korrekte Flag
                     shot_noise = np.random.randint(self.shot_random_min, self.shot_random_max + 1)
                     effective_shots = int(np.clip(self.current_n_shots + shot_noise, self.min_shots, self.max_shots))
 
@@ -1121,6 +1330,7 @@ class QuantumTrainer:
                          if isinstance(jump_info, dict):
                              if jump_info.get("jump_detected", False): any_jump_detected = True
                              chunk_max_jump = max(chunk_max_jump, jump_info.get("max_jump", 0))
+                             # Sicherer Zugriff auf 'state_variance'
                              chunk_variances.append(jump_info.get("state_variance", 0.0))
                 if any_jump_detected: self.jumps_in_epoch_count += 1
                 if chunk_variances: epoch_state_variances.extend(chunk_variances)
@@ -1168,7 +1378,8 @@ class QuantumTrainer:
 
         avg_epoch_loss = total_loss / processed_chunks if processed_chunks > 0 else float('nan')
         jump_rate = self.jumps_in_epoch_count / processed_chunks if processed_chunks > 0 else 0.0
-        avg_epoch_variance = float(np.mean(epoch_state_variances)) if epoch_state_variances else 0.0
+        # Berechne avg_epoch_variance sicher
+        avg_epoch_variance = float(np.mean(epoch_state_variances)) if epoch_state_variances and np.all(np.isfinite(epoch_state_variances)) else 0.0
         print(f"--- Epoch {epoch_num} finished. Avg Loss: {avg_epoch_loss:.5f} ({processed_chunks} chunks). Jump Rate: {jump_rate:.2%}. Avg State Var: {avg_epoch_variance:.3f} ---")
 
         if self.persistence_manager:
@@ -1185,69 +1396,107 @@ class QuantumTrainer:
         # Lade initialen höchsten Loss, falls Checkpoint geladen wurde
         if self.last_epoch_avg_loss is not None and np.isfinite(self.last_epoch_avg_loss):
              self.highest_loss_recorded = max(self.highest_loss_recorded, self.last_epoch_avg_loss)
+             # Wenn wir beim Laden schon über einem potenziellen alten Peak sind,
+             # müssen wir ggf. die Persistenz initialisieren (komplexer Fall, hier vereinfacht)
+             # Vorerst: Startet nicht persistierend nach Laden, außer es wurde so gespeichert.
+             if not self.persisting_in_band:
+                 self.lowest_loss_recorded_since_peak = float('inf')
 
         for i in range(self.epochs):
             epoch_num = i + 1
-            avg_loss, jump_rate, avg_epoch_variance = self.train_epoch(epoch_num) # Fange Metriken auf
+            # Führe train_epoch aus und erhalte Metriken
+            avg_loss, jump_rate, avg_epoch_variance = self.train_epoch(epoch_num)
 
+            # Überspringe Anpassungen, wenn der Loss ungültig ist
             if avg_loss is None or not np.isfinite(avg_loss):
                 print(f"WARNUNG: Epoch {epoch_num}: Ungültiger avg_loss ({avg_loss}). Überspringe Anpassungen.")
-                continue
+                checkpoint_filename = os.path.join(self.config.get("checkpoint_dir", "."), f"quantum_arona_checkpoint_epoch_{epoch_num}.json")
+                self.save_checkpoint(checkpoint_filename)
+                continue # Gehe zur nächsten Epoche
 
-            run_standard_adaptations = True # Standardmäßig laufen Anpassungen
-            loss_delta = avg_loss - self.last_epoch_avg_loss if self.last_epoch_avg_loss is not None and np.isfinite(self.last_epoch_avg_loss) else 0.0
+            # Flag, ob andere Anpassungen laufen sollen (wird von Persistenz-Logik gesetzt)
+            run_standard_adaptations = True
+            # Berechne Loss-Delta für Stagnationserkennung
+            loss_delta = 0.0
+            if self.last_epoch_avg_loss is not None and np.isfinite(self.last_epoch_avg_loss):
+                loss_delta = avg_loss - self.last_epoch_avg_loss
 
-            # --- Peak Loss Persistence Logik ---
-            if self.peak_loss_tracking_enabled:
-                if self.persisting_after_peak:
+
+            # --- *** NEUE Loss Band Persistence Logik *** ---
+            if self.loss_band_persistence_enabled:
+                if self.persisting_in_band:
+                    # --- Fall 1: Loss übersteigt das obere Band (Peak) ---
                     if avg_loss > self.loss_at_last_peak:
-                        print(f"INFO: Epoch {epoch_num}: Neuer Loss-Peak ({avg_loss:.5f} > {self.loss_at_last_peak:.5f}) nach Persistenz. Beende Persistenz.")
-                        self.persisting_after_peak = False
-                        self.highest_loss_recorded = avg_loss
+                        print(f"INFO: Epoch {epoch_num}: Loss ({avg_loss:.5f}) übersteigt Peak ({self.loss_at_last_peak:.5f}). **Beende Persistenz.**")
+                        self.persisting_in_band = False
+                        # Update highest_loss_recorded falls dieser Peak der höchste bisher war
+                        self.highest_loss_recorded = max(self.highest_loss_recorded, avg_loss)
+                        # WICHTIG: loss_at_last_peak und lowest_loss... werden erst bei *neuem* Peak wieder gesetzt
+                        # Reset lowest loss tracker for the new non-persisting phase
+                        self.lowest_loss_recorded_since_peak = float('inf')
+                        run_standard_adaptations = True # Standard-Anpassungen wieder erlauben
+
+                    # --- Fall 2: Loss erreicht neuen Tiefstwert innerhalb des Bandes ---
+                    elif avg_loss < self.lowest_loss_recorded_since_peak:
+                        print(f"INFO: Epoch {epoch_num}: Neuer Tiefstwert im Band ({avg_loss:.5f} < {self.lowest_loss_recorded_since_peak:.5f}). **Verschiebe Band nach unten.**")
+                        self.lowest_loss_recorded_since_peak = avg_loss
+                        # *** Der entscheidende Schritt: Neuer Tiefstwert wird neuer Peak (obere Grenze) ***
                         self.loss_at_last_peak = avg_loss
-                        run_standard_adaptations = True
+                        self.persisting_in_band = True # Bleibe persistierend
+                        run_standard_adaptations = False # Keine Anpassungen in nächster Epoche
+
+                    # --- Fall 3: Loss liegt innerhalb des Bandes (weder neuer Tiefstwert noch über Peak) ---
                     else:
-                        print(f"INFO: Epoch {epoch_num}: Persistiere nach Peak ({self.loss_at_last_peak:.5f}). Current Loss {avg_loss:.5f}. Überspringe adaptive Änderungen.")
-                        run_standard_adaptations = False
-                        # Wichtig: last_epoch_avg_loss trotzdem updaten für nächsten Vergleich!
-                        self.last_epoch_avg_loss = avg_loss
-                        checkpoint_filename = os.path.join(self.config.get("checkpoint_dir", "."), f"quantum_arona_checkpoint_epoch_{epoch_num}.json")
-                        self.save_checkpoint(checkpoint_filename)
-                        continue # Gehe direkt zur nächsten Epoche
+                        print(f"INFO: Epoch {epoch_num}: Persistiere im Band [{self.lowest_loss_recorded_since_peak:.5f} - {self.loss_at_last_peak:.5f}]. Current Loss {avg_loss:.5f}. Überspringe adaptive Änderungen.")
+                        self.persisting_in_band = True # Bleibe persistierend
+                        run_standard_adaptations = False # Keine Anpassungen in nächster Epoche
 
+                # Wenn wir NICHT persistieren: Prüfen, ob ein neuer absoluter Peak erreicht wurde
                 elif avg_loss > self.highest_loss_recorded:
-                    print(f"INFO: Epoch {epoch_num}: Neuer höchster Loss ({avg_loss:.5f} > {self.highest_loss_recorded:.5f}). Aktiviere Persistenz für nächste Epoche.")
+                    print(f"INFO: Epoch {epoch_num}: Neuer höchster Loss ({avg_loss:.5f} > {self.highest_loss_recorded:.5f}). **Aktiviere Persistenz-Band.**")
                     self.highest_loss_recorded = avg_loss
-                    self.loss_at_last_peak = avg_loss
-                    self.persisting_after_peak = True
-                    run_standard_adaptations = True
-            # --- Ende Peak Loss Persistence Logik ---
+                    self.loss_at_last_peak = avg_loss  # Dieser Peak ist die initiale Obergrenze
+                    self.lowest_loss_recorded_since_peak = avg_loss # Peak ist auch initialer Tiefstwert
+                    self.persisting_in_band = True  # Aktiviere Persistenz ab nächster Epoche
+                    run_standard_adaptations = True # Erlaube Anpassungen in DIESER Epoche noch
+                else:
+                     # Wenn kein neuer Peak und nicht persistierend, einfach weitermachen
+                     run_standard_adaptations = True
+                     # Update highest_loss falls es durch Checkpoint-Laden initial falsch war
+                     self.highest_loss_recorded = max(self.highest_loss_recorded, avg_loss)
+                     # Update lowest_loss wenn wir nicht persistieren
+                     self.lowest_loss_recorded_since_peak = min(self.lowest_loss_recorded_since_peak, avg_loss)
 
+            # --- *** Ende Loss Band Persistence Logik *** ---
+
+            # --- Standard Adaptive Strategien (nur wenn run_standard_adaptations == True) ---
             if run_standard_adaptations:
                 stagnated = False
-                if self.last_epoch_avg_loss is not None and np.isfinite(self.last_epoch_avg_loss):
-                    if abs(loss_delta) < self.stagnation_threshold_loss: stagnated = True
+                # Loss-Delta wurde bereits oben berechnet
+                if abs(loss_delta) < self.stagnation_threshold_loss:
+                    stagnated = True
 
                 # Strategie 1: Perturbation bei Stagnation
                 if self.enable_perturbation and stagnated:
-                    print(f"INFO: Epoch {epoch_num}: Stagnation detected. Applying parameter perturbation.")
+                    print(f"INFO: Epoch {epoch_num}: Stagnation detected (Loss Delta: {loss_delta:+.5f}). Applying parameter perturbation.")
                     perturb_std = self.perturbation_std_dev; perturbed_nodes = 0
                     for node in self.model.nodes:
                         if node.is_quantum and node.q_system:
                             perturb = np.random.normal(0, perturb_std, size=node.q_system.params.shape)
                             node.q_system.update_internal_params(perturb); perturbed_nodes +=1
-                    print(f"INFO: Perturbed {perturbed_nodes} quantum nodes.")
+                    if perturbed_nodes > 0: print(f"INFO: Perturbed {perturbed_nodes} quantum nodes.")
 
                 # Strategie 5: Erhöhe Shots bei niedriger Varianz (nur wenn NICHT stagnierend)
                 variance_triggered_shot_increase = False
                 if self.enable_variance_trigger and avg_epoch_variance < self.variance_threshold_low and not stagnated:
-                    new_shots = min(self.max_shots, int(self.current_n_shots * 1.1))
+                    new_shots = min(self.max_shots, int(self.current_n_shots * 1.1)) # Leicht erhöhen
                     if new_shots > self.current_n_shots:
                         print(f"INFO: Epoch {epoch_num}: Low avg state variance ({avg_epoch_variance:.3f} < {self.variance_threshold_low:.3f}). Increasing shots to {new_shots}.")
                         self.current_n_shots = new_shots
                         variance_triggered_shot_increase = True
 
                 # Dynamische Shot-Anpassung (Stagnation ODER guter Verlauf)
+                # Läuft nur, wenn nicht schon durch Varianz erhöht wurde
                 if self.enable_dynamic_shots and not variance_triggered_shot_increase:
                     if stagnated:
                         new_shots = int(self.current_n_shots * self.shots_increase_factor)
@@ -1255,11 +1504,15 @@ class QuantumTrainer:
                         if new_shots > self.current_n_shots:
                             print(f"INFO: Epoch {epoch_num}: Stagnation detected (Loss Delta: {loss_delta:+.5f}). Increasing shots to {new_shots}.")
                             self.current_n_shots = new_shots
+                    # Reduziere nur, wenn nicht stagniert UND Sprungrate niedrig
                     elif jump_rate <= self.jump_rate_threshold_for_shot_decrease and self.current_n_shots > self.min_shots:
                         new_shots = max(self.min_shots, int(self.current_n_shots * self.shots_decrease_factor))
                         if new_shots < self.current_n_shots:
                             print(f"INFO: Epoch {epoch_num}: Stable, low jump rate. Reducing shots towards minimum: {new_shots}.")
                             self.current_n_shots = new_shots
+
+            # --- Ende Adaptive Strategien ---
+
 
             # Speichere aktuellen Loss für nächsten Vergleich (immer nötig)
             if np.isfinite(avg_loss):
@@ -1269,10 +1522,14 @@ class QuantumTrainer:
             checkpoint_filename = os.path.join(self.config.get("checkpoint_dir", "."), f"quantum_arona_checkpoint_epoch_{epoch_num}.json")
             self.save_checkpoint(checkpoint_filename) # Speichere auch den Persistenz-Status
 
+            # Explizites continue, wenn Adaptionen übersprungen wurden (redundant, aber klar)
+            if self.loss_band_persistence_enabled and self.persisting_in_band and not run_standard_adaptations:
+                 continue
+
         print("Training abgeschlossen.")
 
     def save_checkpoint(self, filename: str):
-        """Speichert den Checkpoint inklusive Persistenz-Status."""
+        """Speichert den Checkpoint inklusive Loss Band Persistenz-Status."""
         try:
             os.makedirs(os.path.dirname(filename), exist_ok=True)
             state_data = self.model.get_state()
@@ -1280,16 +1537,17 @@ class QuantumTrainer:
             state_data["trainer_state"] = {
                 "current_n_shots": self.current_n_shots,
                 "last_epoch_avg_loss": self.last_epoch_avg_loss,
-                # --- NEU: Persistenz-Status speichern ---
+                # --- Loss Band Persistenz-Status speichern ---
                 "highest_loss_recorded": self.highest_loss_recorded,
                 "loss_at_last_peak": self.loss_at_last_peak,
-                "persisting_after_peak": self.persisting_after_peak
+                "lowest_loss_recorded_since_peak": self.lowest_loss_recorded_since_peak, # NEU
+                "persisting_in_band": self.persisting_in_band # Geänderter Name
             }
             with open(filename, 'w', encoding='utf-8') as f: json.dump(state_data, f, indent=2, ensure_ascii=False)
         except Exception as e: print(f"ERROR saving checkpoint {filename}: {e}"); traceback.print_exc()
 
     def load_checkpoint(self, filename: str):
-        """Lädt den Checkpoint inklusive Persistenz-Status."""
+        """Lädt den Checkpoint inklusive Loss Band Persistenz-Status."""
         if not os.path.exists(filename): print(f"ERROR: Checkpoint file not found: {filename}"); return False
         try:
             with open(filename, 'r', encoding='utf-8') as f: state_data = json.load(f)
@@ -1304,19 +1562,26 @@ class QuantumTrainer:
             trainer_state = state_data.get("trainer_state", {})
             self.current_n_shots = trainer_state.get("current_n_shots", self.base_n_shots)
             self.last_epoch_avg_loss = trainer_state.get("last_epoch_avg_loss", None)
-            # --- NEU: Persistenz-Status laden ---
+            # --- Loss Band Persistenz-Status laden ---
             self.highest_loss_recorded = trainer_state.get("highest_loss_recorded", float('-inf'))
             self.loss_at_last_peak = trainer_state.get("loss_at_last_peak", float('-inf'))
-            self.persisting_after_peak = trainer_state.get("persisting_after_peak", False)
+            self.lowest_loss_recorded_since_peak = trainer_state.get("lowest_loss_recorded_since_peak", float('inf')) # NEU
+            self.persisting_in_band = trainer_state.get("persisting_in_band", False) # Geänderter Name
             # ---
             # Lade relevante Configs neu (wichtig, falls sie sich im Checkpoint anders sind)
             self.use_hebbian_learning = self.config.get("use_hebbian_learning", True)
             self.hebb_history_window = self.config.get("hebb_history_window", 3)
             self.min_shots = self.config.get("min_simulation_shots", 3)
             self.max_shots = self.config.get("max_simulation_shots", 50)
-            # ... (andere Parameter ggf. auch neu laden, falls sie sich ändern könnten) ...
+            # ... (andere Parameter ggf. auch neu laden) ...
 
-            print(f"Checkpoint loaded: {filename} (Loaded Shots: {self.current_n_shots}, Last Loss: {self.last_epoch_avg_loss}, Persisting: {self.persisting_after_peak}, HighestLoss: {self.highest_loss_recorded})")
+            # Angepasste Print-Ausgabe
+            loss_str = f"{self.last_epoch_avg_loss:.5f}" if self.last_epoch_avg_loss is not None else "None"
+            high_loss_str = f"{self.highest_loss_recorded:.5f}" if np.isfinite(self.highest_loss_recorded) else "-inf"
+            peak_loss_str = f"{self.loss_at_last_peak:.5f}" if np.isfinite(self.loss_at_last_peak) else "-inf"
+            low_loss_str = f"{self.lowest_loss_recorded_since_peak:.5f}" if np.isfinite(self.lowest_loss_recorded_since_peak) else "inf"
+
+            print(f"Checkpoint loaded: {filename} (Shots: {self.current_n_shots}, LastLoss: {loss_str}, Persisting: {self.persisting_in_band}, Highest: {high_loss_str}, Peak: {peak_loss_str}, LowestSincePeak: {low_loss_str})")
             return True
         except Exception as e: print(f"ERROR loading checkpoint {filename}: {e}"); traceback.print_exc(); return False
 
@@ -1399,6 +1664,7 @@ class PersistenceManager:
 # # 8. Hilfsfunktionen & Konfiguration
 # ########################################################################
 
+
 def load_config(config_file: str = "config_arona.json") -> Dict:
     """Lädt die Konfigurationsdatei und merged mit Defaults."""
     default_config = {
@@ -1424,8 +1690,8 @@ def load_config(config_file: str = "config_arona.json") -> Dict:
         "stagnation_threshold_loss": 0.005,
         "shots_increase_factor": 1.5,
         "shots_decrease_factor": 0.95,
-        "max_simulation_shots": 30, # Ggf. anpassen
-        "min_simulation_shots": 3,  # Ggf. anpassen
+        "max_simulation_shots": 30, # Angepasst an Beobachtung
+        "min_simulation_shots": 3,
         "jump_rate_threshold_for_shot_decrease": 0.1,
         "loss_improvement_threshold_for_jump": -0.01,
         "feedback_lr_scaling_factor": 0.5,
@@ -1448,11 +1714,13 @@ def load_config(config_file: str = "config_arona.json") -> Dict:
         "hebb_threshold_low": 0.30,
         "hebb_reg_factor": 0.001,
         "activation_history_len": 50,
-        # *** NEU: Parameter für Peak Loss Persistence ***
-        "peak_loss_tracking_enabled": True, # Standardmäßig aktiviert
+        # *** NEU: Parameter für Loss Band Persistence ***
+        "peak_loss_tracking_enabled": False, # Alte Strategie standardmäßig aus
+        "loss_band_persistence_enabled": True, # NEUE Strategie standardmäßig an
         # *** Ende neue Parameter ***
         "network_structure": {
-            "nodes": [
+            # ... (Netzwerkstruktur wie in deiner Config) ...
+             "nodes": [
               {"label": "Limbus Affektus", "class": "LimbusAffektus", "num_qubits": 2},
               {"label": "Meta Cognitio", "class": "MetaCognitio", "num_qubits": 2},
               {"label": "Cortex Criticus", "class": "CortexCriticus", "num_qubits": 2},
@@ -1478,7 +1746,7 @@ def load_config(config_file: str = "config_arona.json") -> Dict:
             ]
         }
     }
-    # Rest der Funktion bleibt gleich (Laden & Mergen)
+    # Laden & Mergen der Konfigurationsdatei
     if os.path.exists(config_file):
         try:
             with open(config_file, 'r', encoding='utf-8') as f: loaded_config = json.load(f)
@@ -1501,46 +1769,88 @@ def load_config(config_file: str = "config_arona.json") -> Dict:
     else: print(f"WARNUNG: Config '{config_file}' nicht gefunden. Verwende Defaults.")
     return default_config
 
-# --- Main Execution Block ---
+def generate_prompt_response(
+    prompt: str,
+    loaded_model: QuantumAronaModel, # *** NEU: Modellobjekt direkt übergeben ***
+    # model_path: str, # Wird nicht mehr direkt hier gebraucht
+    # config_path: str = "config_arona.json", # Config kommt vom Modell
+    inference_steps: int = 15,
+    n_shots_inference: int = 50
+    ) -> str:
+    """
+    Verarbeitet einen Prompt mit einem VORGELADENEN Quantum-Arona-Modell,
+    simuliert einen Denkprozess und generiert eine Textantwort aus der Konzeptkette.
+    """
+    if not loaded_model:
+         return "[Fehler: Kein Modellobjekt übergeben]"
+
+    # 1. & 2. & 3. (Laden/Init) sind bereits im Main-Block passiert
+
+    # 4. Prompt anwenden (initiale Stimulation des übergebenen Modells)
+    print(f"Wende Prompt an: '{prompt}'")
+    loaded_model.apply_text_input(prompt)
+
+    # 5. Inferenzschritte durchführen ("Denken" lassen im übergebenen Modell)
+    print(f"Simuliere {inference_steps} Denkschritte...")
+    thought_chain: List[str] = []
+    if TQDM_AVAILABLE: iterator = tqdm(range(inference_steps), desc="Denkschritte")
+    else: iterator = range(inference_steps)
+
+    for step in iterator:
+        dominant_concept = loaded_model.inference_step(n_shots=n_shots_inference)
+        if dominant_concept:
+            thought_chain.append(dominant_concept)
+            if TQDM_AVAILABLE: iterator.set_postfix({"Fokus": dominant_concept})
+
+    print(f"Gedankenkette: {thought_chain}")
+
+    # 6. Textantwort aus Endzustand generieren (mit Heuristik im übergebenen Modell)
+    response = loaded_model.generate_text_from_thought_chain(thought_chain)
+
+    return response
+
+# --- Main Execution Block (Option 2: Nur Inferenz) ---
 if __name__ == "__main__":
-    print("Starting Quantum Arona Core v1.1 (Experimental Q-LLM with Raumspaltung)")
-    config = load_config("config_arona.json")
-
-    db_path = config.get("log_db_path", "training_arona.db")
-    persistence_manager = None
-    try: persistence_manager = PersistenceManager(db_path)
-    except Exception as e: print(f"FATAL: Could not initialize PersistenceManager: {e}. Exiting.") ; exit(1)
-
+    print("Starting Quantum Arona Core v1.1 - INFERENCE MODE")
+    # --- WICHTIG: Pfad zur gespeicherten Modelldatei anpassen! ---
+    # Beispiel: Suche die neueste *final_model* Datei
+    checkpoint_dir = load_config().get("checkpoint_dir", ".") # Config kurz laden für Pfad
     try:
-        arona_model = QuantumAronaModel(config)
-        loader = DatasetLoader(config.get("dataset_files", []), config.get("chunk_size", 500), config.get("chunk_overlap", 50))
-        contextualizer = Contextualizer()
-        embedder = StateEmbedder(config.get("embedding_dim", 128))
-    except Exception as e: print(f"FATAL: Error initializing core components: {e}"); traceback.print_exc(); exit(1)
+        model_files = [f for f in os.listdir(checkpoint_dir) if f.startswith("quantum_arona_final_model_") and f.endswith(".json")]
+        if model_files:
+            model_files.sort(key=lambda x: os.path.getmtime(os.path.join(checkpoint_dir, x)), reverse=True)
+            MODEL_FILE_TO_LOAD = os.path.join(checkpoint_dir, model_files[0])
+            print(f"Verwende neuestes gefundenes Modell: {MODEL_FILE_TO_LOAD}")
+        else:
+            MODEL_FILE_TO_LOAD = None
+            print(f"FEHLER: Keine finale Modelldatei im Verzeichnis gefunden: {checkpoint_dir}")
+            print("Bitte zuerst das Modell trainieren und speichern ('save_model_state').")
+    except FileNotFoundError:
+        MODEL_FILE_TO_LOAD = None
+        print(f"FEHLER: Checkpoint-Verzeichnis nicht gefunden: {checkpoint_dir}")
+    except Exception as e:
+         MODEL_FILE_TO_LOAD = None
+         print(f"Fehler beim Suchen der Modelldatei: {e}")
 
-    trainer = QuantumTrainer(arona_model, loader, contextualizer, embedder, config, persistence_manager)
 
-    if config.get("auto_load_latest_checkpoint", False):
-        checkpoint_dir = config.get("checkpoint_dir", ".")
-        try:
-            checkpoints = [f for f in os.listdir(checkpoint_dir) if f.startswith("quantum_arona_checkpoint_epoch_") and f.endswith(".json")]
-            if checkpoints:
-                checkpoints.sort(key=lambda x: int(x.split('_')[-1].split('.')[0]))
-                latest_checkpoint = os.path.join(checkpoint_dir, checkpoints[-1])
-                print(f"Attempting to auto-load latest checkpoint: {latest_checkpoint}")
-                if trainer.load_checkpoint(latest_checkpoint): print("Successfully loaded latest checkpoint.")
-                else: print("Failed to load latest checkpoint, starting fresh.")
-            else: print("No checkpoints found for auto-loading.")
-        except Exception as e: print(f"Error during auto-load: {e}")
+    CONFIG_FILE = "config_arona.json"
 
-    try: trainer.train()
-    except KeyboardInterrupt: print("\nTraining interrupted by user.")
-    except Exception as train_error: print(f"\nFATAL ERROR during training: {train_error}"); traceback.print_exc()
-    finally:
-        if persistence_manager: print("Closing database connection..."); persistence_manager.close()
-        # Optional: Finalen Checkpoint speichern
-        # final_checkpoint = os.path.join(config.get("checkpoint_dir", "."), "quantum_arona_checkpoint_final.json")
-        # trainer.save_checkpoint(final_checkpoint)
-        # print(f"Final state saved to {final_checkpoint}")
+    if MODEL_FILE_TO_LOAD and os.path.exists(MODEL_FILE_TO_LOAD):
+        while True:
+            user_prompt = input("Prompt eingeben (oder 'quit' zum Beenden): ")
+            if user_prompt.lower() == 'quit': break
+            if not user_prompt: continue
 
-    print("Quantum Arona Core training process finished.")
+            response = generate_prompt_response(
+                prompt=user_prompt,
+                model_path=MODEL_FILE_TO_LOAD,
+                config_path=CONFIG_FILE,
+                inference_steps=20, # Mehr Schritte für längere Ketten
+                n_shots_inference=50 # Stabilere Shots für Inferenz
+            )
+            print("\nQuantum-Arona Antwort:")
+            print("-" * 25)
+            print(response)
+            print("-" * 25 + "\n")
+
+    print("Quantum Arona Core inference finished.")

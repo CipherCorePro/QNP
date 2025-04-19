@@ -1,7 +1,7 @@
 {
   "num_qubits_per_node": 2,
   "simulation_shots": 30,
-  "training_epochs": 10,
+  "training_epochs": 1,
   "learning_rate_classical": 0.01,
   "learning_rate_quantum": 0.005,
   "dataset_files": [

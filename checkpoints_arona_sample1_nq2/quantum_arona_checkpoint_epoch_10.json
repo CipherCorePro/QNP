@@ -160,147 +160,169 @@
     {
       "label": "Limbus Affektus",
       "class": "LimbusAffektus",
-      "activation": 0.2995133344139311,
+      "activation": 0.3015336077700929,
+      "activation_history_len": 50,
       "neuron_type": "interneuron",
       "is_quantum": true,
       "num_qubits": 2,
       "q_params": [
-        5.550015277804575,
-        1.9648818198388427,
-        4.84750101550144,
-        1.3500804442675751
-      ]
+        6.283185307179586,
+        2.1190678648125707,
+        6.283185307179586,
+        1.1913125723328262
+      ],
+      "emotion_state": {
+        "pleasure": 0.2451920747097641,
+        "arousal": 0.559163954187518,
+        "dominance": 0.10024479441299672
+      }
     },
     {
       "label": "Meta Cognitio",
       "class": "MetaCognitio",
-      "activation": 0.5333333333333333,
+      "activation": 0.45,
+      "activation_history_len": 50,
       "neuron_type": "interneuron",
       "is_quantum": true,
       "num_qubits": 2,
       "q_params": [
-        3.8747463452362045,
-        2.140856247944491,
-        1.722966480348499,
-        2.895490803994395
-      ]
+        6.230412663739985,
+        1.9944828263410943,
+        4.386985465684903,
+        2.8954210762302712
+      ],
+      "strategy_state": {
+        "lr_boost": 1.0,
+        "last_avg_activation": 0.5,
+        "stagnation_counter": 0,
+        "oscillation_detected": false
+      }
     },
     {
       "label": "Cortex Criticus",
       "class": "CortexCriticus",
-      "activation": 0.5666666666666667,
+      "activation": 0.47,
+      "activation_history_len": 50,
       "neuron_type": "inhibitory",
       "is_quantum": true,
       "num_qubits": 2,
       "q_params": [
-        0.4290804361086131,
-        2.217374705124174,
-        1.5066131308008048,
-        1.0376598866602609
+        0.3061808509366534,
+        2.138522272829133,
+        1.5090592956310676,
+        1.074400716548649
       ]
     },
     {
       "label": "Cortex Creativus",
       "class": "CortexCreativus",
-      "activation": 0.4666666666666667,
+      "activation": 0.51,
+      "activation_history_len": 50,
       "neuron_type": "excitatory",
       "is_quantum": true,
       "num_qubits": 2,
       "q_params": [
-        0.009873743026105693,
-        3.010479261989283,
-        0.37303751979917454,
-        0.3779521044572831
+        0.13423271504472026,
+        2.939275422640913,
+        0.5196667509888309,
+        0.16927263437269907
       ]
     },
     {
       "label": "Simulatrix Neuralis",
       "class": "SimulatrixNeuralis",
-      "activation": 0.5833333333333334,
+      "activation": 0.47,
+      "activation_history_len": 50,
       "neuron_type": "excitatory",
       "is_quantum": true,
       "num_qubits": 2,
       "q_params": [
-        2.169418157590414,
-        1.5991341206529868,
-        1.0852070623420311,
-        2.901958496239637
+        2.167069825792058,
+        1.824622261861014,
+        0.9925286627429845,
+        3.1185033912483955
       ]
     },
     {
       "label": "Cortex Socialis",
       "class": "CortexSocialis",
-      "activation": 0.5166666666666667,
+      "activation": 0.5,
+      "activation_history_len": 50,
       "neuron_type": "excitatory",
       "is_quantum": true,
       "num_qubits": 2,
       "q_params": [
-        2.8900876871244137,
-        2.689194676499169,
-        1.4223824419385707,
-        0.10776572472436356
+        2.947021380782846,
+        2.867525361073907,
+        1.3780360694859475,
+        0.07689972972177224
       ]
     },
     {
       "label": "Philosophie",
       "class": "MemoryNode",
-      "activation": 0.5666666666666667,
+      "activation": 0.45,
+      "activation_history_len": 50,
       "neuron_type": "excitatory",
       "is_quantum": true,
       "num_qubits": 2,
       "q_params": [
-        3.3336884334857206,
-        1.4346290293850679,
-        2.4548792577778062,
-        1.802895601052783
+        3.6345785468899834,
+        1.3292215016881366,
+        2.8435557791130814,
+        1.959453804375142
       ]
     },
     {
       "label": "Ethik",
       "class": "MemoryNode",
-      "activation": 0.5333333333333333,
+      "activation": 0.49,
+      "activation_history_len": 50,
       "neuron_type": "excitatory",
       "is_quantum": true,
       "num_qubits": 2,
       "q_params": [
-        1.9181545785552234,
-        1.359792772214834,
-        4.182713512395413,
-        0.12312305522921572
+        4.385684871608661,
+        1.2747449100063097,
+        6.227177556851915,
+        0.08030946357401755
       ]
     },
     {
       "label": "Technologie",
       "class": "MemoryNode",
-      "activation": 0.45,
+      "activation": 0.61,
+      "activation_history_len": 50,
       "neuron_type": "excitatory",
       "is_quantum": true,
       "num_qubits": 2,
       "q_params": [
-        3.4526665869878244,
-        2.6447087127312683,
-        2.6551611275598597,
-        2.112085376340785
+        3.569729295997284,
+        2.6235550983645872,
+        2.98578774495882,
+        2.2359892041839005
       ]
     },
     {
       "label": "Bewusstsein",
       "class": "MemoryNode",
-      "activation": 0.5166666666666667,
+      "activation": 0.55,
+      "activation_history_len": 50,
       "neuron_type": "excitatory",
       "is_quantum": true,
       "num_qubits": 2,
       "q_params": [
-        0.22357831919953763,
-        1.7201510222345067,
-        1.6365677122091358,
-        1.1469215720754975
+        0.1089634950837397,
+        1.6807639740522056,
+        1.4506669786430413,
+        0.9292369896828356
       ]
     },
     {
       "label": "Ziel_Rationalitaet",
       "class": "ValueNode",
       "activation": 0.5,
+      "activation_history_len": 50,
       "neuron_type": "excitatory",
       "is_quantum": false,
       "num_qubits": 0
@@ -309,6 +331,7 @@
       "label": "Ziel_Empathie",
       "class": "ValueNode",
       "activation": 0.5,
+      "activation_history_len": 50,
       "neuron_type": "excitatory",
       "is_quantum": false,
       "num_qubits": 0
@@ -318,54 +341,55 @@
     {
       "source": "Limbus Affektus",
       "target": "Cortex Creativus",
-      "weight": 0.20344341918115902
+      "weight": 0.004191332686894328
     },
     {
       "source": "Limbus Affektus",
       "target": "Cortex Criticus",
-      "weight": 0.9939685227071913
+      "weight": 0.008687946783994305
     },
     {
       "source": "Meta Cognitio",
       "target": "Limbus Affektus",
-      "weight": 0.18173512156947091
+      "weight": 0.012406986140780422
     },
     {
       "source": "Philosophie",
       "target": "Meta Cognitio",
-      "weight": 0.025164533333865247
+      "weight": 0.007229676097180427
     },
     {
       "source": "Ethik",
       "target": "Cortex Criticus",
-      "weight": 0.18636850823244477
+      "weight": 0.0021727350360847522
     },
     {
       "source": "Technologie",
       "target": "Cortex Creativus",
-      "weight": 0.03838370656866639
+      "weight": 0.007622404603814088
     },
     {
       "source": "Ziel_Rationalitaet",
       "target": "Meta Cognitio",
-      "weight": 2.0432258217106653e-34
+      "weight": 4.1581134157366154e-69
     },
     {
       "source": "Ziel_Empathie",
       "target": "Limbus Affektus",
-      "weight": 1.7026881847588694e-34
+      "weight": 3.465094513113816e-69
     }
   ],
   "emotion_state": {
-    "pleasure": 0.27455680252930925,
-    "arousal": 0.5300089500910543,
-    "dominance": 0.09397425062142963
+    "pleasure": 0.2451920747097641,
+    "arousal": 0.559163954187518,
+    "dominance": 0.10024479441299672
   },
   "trainer_state": {
-    "current_n_shots": 30,
-    "last_epoch_avg_loss": 0.3342825613061248,
+    "current_n_shots": 50,
+    "last_epoch_avg_loss": 0.3347263516778656,
     "highest_loss_recorded": 0.34605530982178045,
     "loss_at_last_peak": 0.34605530982178045,
-    "persisting_after_peak": true
+    "lowest_loss_recorded_since_peak": 0.3339090316884336,
+    "persisting_in_band": false
   }
 }
