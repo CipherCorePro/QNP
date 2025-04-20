@@ -647,15 +647,32 @@ def hebbian_learning_quantum_node_smoothed(
     elif act_a_smooth > activation_threshold_high and act_b_smooth < activation_threshold_low:
         delta_weight_ltd = -0.1 * learning_rate_classical * act_a_smooth
         update_classical_weight(connection, delta_weight_ltd)
+        # Innerhalb hebbian_learning_quantum_node_smoothed, im Potentiation/LTD Block:
         if node_a.is_quantum and node_a.q_system:
-            q_system_a = node_a.q_system; param_delta = np.zeros_like(q_system_a.get_params())
+            q_system_a = node_a.q_system
+            param_delta = np.zeros_like(q_system_a.get_params())
             if len(param_delta) > 0:
                 ry_indices = range(0, q_system_a.num_params, 2)
-                param_delta[list(ry_indices)] = -0.1 * learning_rate_quantum * act_a_smooth * 0.5
+                rz_indices = range(1, q_system_a.num_params, 2) # RZ Indizes
+
+                # RY Update (wie bisher, ggf. Faktor anpassen)
+                ry_update_strength = learning_rate_quantum * act_a_smooth * act_b_smooth * 0.5
+                if potentiation_condition: # Pseudocode für LTP
+                     param_delta[list(ry_indices)] = ry_update_strength
+                     # --- NEU: Experimentelles RZ Update ---
+                     # Option A: Kleiner Random Walk bei LTP
+                     param_delta[list(rz_indices)] += np.random.normal(0, 0.01 * learning_rate_quantum, size=len(rz_indices))
+                     # --- Ende NEU ---
+                elif ltd_condition: # Pseudocode für LTD
+                     param_delta[list(ry_indices)] = -0.1 * learning_rate_quantum * act_a_smooth * 0.5
+                     # --- NEU: Kleiner Random Walk bei LTD (andere Richtung?) ---
+                     # param_delta[list(rz_indices)] -= np.random.normal(0, 0.005 * learning_rate_quantum, size=len(rz_indices))
+                     # --- Ende NEU ---
+
             update_quantum_params(node_a, param_delta)
 
-    # Regularization
-    connection.weight = float(np.clip(float(connection.weight) - reg_factor * float(connection.weight), 0.0, weight_limit))
+        # Regularisierung wie bisher
+        connection.weight = float(np.clip(float(connection.weight) - reg_factor * float(connection.weight), 0.0, weight_limit))
 
 
 def calculate_parameter_updates( # Behalte die Funktion für den Fall, dass nicht-Hebb'sche Updates benötigt werden
@@ -1046,82 +1063,172 @@ class QuantumAronaModel:
                      most_active_label = node.label
         return most_active_label
 
-    # *** Version mit Vorlagen ***
+
     def generate_text_from_thought_chain(self, thought_chain: List[str], original_prompt: str = "") -> str:
         """
         Generiert Text mithilfe von Vorlagen basierend auf der Konzeptkette,
         dem ursprünglichen Prompt und Modulzuständen.
-        VERBESSERT: Versucht Prompt-Kontext besser einzubinden.
+        VERBESSERT: Berücksichtigt Endstabilität der *originalen* Kette bei niedriger Dominanz.
         """
-        if not thought_chain: return "[Keine klaren Konzepte während der Inferenz gefunden.]"
+        if not thought_chain:
+            return "[Keine klaren Konzepte während der Inferenz gefunden.]"
+
+        # --- Kette bereinigen (entfernt nur direkt aufeinanderfolgende Duplikate) ---
         processed_chain = []
-        last_concept = None
+        last_processed_concept = None
         for concept in thought_chain:
-            if concept and concept != last_concept:
-                 processed_chain.append(concept); last_concept = concept
-        if not processed_chain: return "[Keine stabilen Konzepte über Schwelle gefunden.]"
+            if concept and isinstance(concept, str) and concept.strip():
+                current_concept = concept.strip()
+                if current_concept != last_processed_concept:
+                    processed_chain.append(current_concept)
+                    last_processed_concept = current_concept
+
+        if not processed_chain:
+            return "[Keine stabilen Konzepte über Schwelle gefunden.]"
+
         concept_counts = Counter(processed_chain)
         most_common_concepts = concept_counts.most_common(3)
-        unique_concepts = list(dict.fromkeys(processed_chain))
+        unique_concepts = list(dict.fromkeys(processed_chain)) # Behält Reihenfolge bei
         first = processed_chain[0]
-        last = processed_chain[-1]
+        last = processed_chain[-1] # Das letzte *unterschiedliche* Konzept
+
+        # --- Zustände holen ---
         emotion_state = self.global_emotion_state
         pleasure = emotion_state.get("pleasure", 0.0)
         arousal = emotion_state.get("arousal", 0.0)
         dominance = emotion_state.get("dominance", 0.0)
         critic = self.node_map.get("Cortex Criticus")
-        critic_activation = float(getattr(critic, 'activation', 0.0)) if critic and np.isfinite(getattr(critic, 'activation', 0.0)) else 0.0
+        critic_activation = 0.0
+        if critic and hasattr(critic, 'activation'):
+             act_val = getattr(critic, 'activation', 0.0)
+             if isinstance(act_val, (int, float)) and np.isfinite(act_val):
+                 critic_activation = float(act_val)
         critic_active = critic_activation > 0.5
+
+        # --- Prompt-Analyse ---
         prompt_keywords_in_nodes = []
         prompt_lower = original_prompt.lower()
         for node_label in self.node_map:
-             if isinstance(self.node_map[node_label], MemoryNode):
+             node_instance = self.node_map.get(node_label)
+             if node_instance and isinstance(node_instance, MemoryNode):
                  node_label_lower = node_label.lower()
                  match_found = False
-                 if len(node_label_lower) > 3 and node_label_lower in prompt_lower: match_found = True
+                 if len(node_label_lower) > 3 and node_label_lower in prompt_lower:
+                     match_found = True
                  if not match_found:
                      for word in prompt_lower.split():
-                          if word.startswith(node_label_lower): match_found = True; break
-                 if match_found: prompt_keywords_in_nodes.append(node_label)
+                          if word.startswith(node_label_lower):
+                              match_found = True
+                              break
+                 if match_found:
+                     prompt_keywords_in_nodes.append(node_label)
+
+        # --- Textbausteine zusammensetzen ---
         response_parts = []
         prompt_ref_used = False
+
+        # 1. Einleitung
         if prompt_keywords_in_nodes and prompt_keywords_in_nodes[0] == first:
             response_parts.append(f"Ausgehend von Ihrer Frage zu '{first}':")
             prompt_ref_used = True
         elif prompt_keywords_in_nodes:
              response_parts.append(f"Ihre Anfrage bezog sich auf '{', '.join(prompt_keywords_in_nodes)}'. Meine interne Analyse begann jedoch mit '{first}' und entwickelte sich wie folgt:")
              prompt_ref_used = True
-        elif len(processed_chain) > 1 : response_parts.append(f"Meine Gedanken entwickelten sich von '{first}':")
-        else: response_parts.append(f"Im Zentrum meiner Überlegungen steht '{first}':")
-        if len(unique_concepts) == 1 and not prompt_ref_used: response_parts.append(f"Das Konzept '{first}' blieb durchgehend dominant.")
+        elif len(processed_chain) > 1 :
+            response_parts.append(f"Meine Gedanken entwickelten sich von '{first}':")
+        else:
+            response_parts.append(f"Im Zentrum meiner Überlegungen steht '{first}':")
+
+        # 2. Beschreibung des Verlaufs
+        if len(unique_concepts) == 1 and not prompt_ref_used:
+            response_parts.append(f"Das Konzept '{first}' blieb durchgehend dominant.")
         elif len(unique_concepts) > 1:
             top_concept_str = most_common_concepts[0][0] if most_common_concepts else last
             top_count = most_common_concepts[0][1] if most_common_concepts else 0
-            if top_count > len(processed_chain) * 0.4: response_parts.append(f"Obwohl verschiedene Themen berührt wurden, kristallisierte sich '{top_concept_str}' als häufigster Fokus heraus, endend bei '{last}'.")
+            if top_count > len(processed_chain) * 0.4:
+                 response_parts.append(f"Obwohl verschiedene Themen berührt wurden, kristallisierte sich '{top_concept_str}' als häufigster Fokus heraus, endend bei '{last}'.")
             elif len(unique_concepts) <= 4:
-                 concepts_str = "', '".join(unique_concepts[1:])
-                 response_parts.append(f"Es wurden die Themen '{concepts_str}' berührt, mit einem abschließenden Fokus auf '{last}'.")
-            else:
+                 # Liste der anderen Konzepte erstellen (ohne das erste)
+                 other_concepts = [c for c in unique_concepts if c != first]
+                 # Füge das erste Konzept hinzu, falls es nicht das letzte ist, um Dopplungen zu vermeiden
+                 concepts_to_mention = other_concepts #[first] + other_concepts if first != last else other_concepts
+
+                 if concepts_to_mention:
+                      concepts_str = "', '".join(concepts_to_mention)
+                      response_parts.append(f"Es wurden die Themen '{concepts_str}' berührt, mit einem abschließenden Fokus auf '{last}'.")
+                 else: # Fall: Nur erstes und letztes Konzept sind gleich
+                      response_parts.append(f"Der Fokus kehrte zu '{last}' zurück.")
+
+            else: # Viele verschiedene Konzepte
                  mitte_index = len(processed_chain) // 2
                  mitte = processed_chain[mitte_index] if mitte_index < len(processed_chain) else "verschiedenen Konzepten"
-                 if arousal > 0.7: response_parts.append(f"Ein sehr dynamischer Gedankengang führte von '{first}' über '{mitte}' schließlich zu '{last}'.")
-                 elif critic_active: response_parts.append(f"Nach eingehender Prüfung verschiedener Ideen, beginnend bei '{first}', kristallisierte sich '{last}' als relevantes Endkonzept heraus.")
-                 else: response_parts.append(f"Ausgehend von '{first}' wurde eine Kette von Konzepten bis hin zu '{last}' durchlaufen.")
+                 if arousal > 0.7:
+                     response_parts.append(f"Ein sehr dynamischer Gedankengang führte von '{first}' über '{mitte}' schließlich zu '{last}'.")
+                 elif critic_active:
+                     response_parts.append(f"Nach eingehender Prüfung verschiedener Ideen, beginnend bei '{first}', kristallisierte sich '{last}' als relevantes Endkonzept heraus.")
+                 else:
+                     response_parts.append(f"Ausgehend von '{first}' wurde eine Kette von Konzepten bis hin zu '{last}' durchlaufen.")
+
+        # 3. Kritischer Kommentar
         if critic_active and len(unique_concepts) > 1:
-            critical_comment = random.choice(["Eine sorgfältige Abwägung der verschiedenen Aspekte scheint hier notwendig.", "Dies ist jedoch eine vielschichtige Angelegenheit.", "Eine kritische Perspektive legt nahe, dass..."])
+            critical_comment = random.choice([
+                "Eine sorgfältige Abwägung der verschiedenen Aspekte scheint hier notwendig.",
+                "Dies ist jedoch eine vielschichtige Angelegenheit.",
+                "Eine kritische Perspektive legt nahe, dass..."
+            ])
             response_parts.append(critical_comment)
-        if pleasure < -0.4: response_parts.append("Die assoziierte Tonalität ist eher ernst.")
-        elif pleasure > 0.6 and arousal > 0.5: response_parts.append("Dies scheint ein besonders stimulierender Gedanke zu sein!")
-        elif arousal > 0.75: response_parts.append("Das Thema erzeugt hohe interne Aktivität.")
-        elif dominance < 0.2 and len(unique_concepts) > 2 : response_parts.append("Die genaue Richtung ist hier noch nicht gefestigt.")
+
+        # 4. Emotionale/Dynamische Kommentare
+        if pleasure < -0.4:
+            response_parts.append("Die assoziierte Tonalität ist eher ernst.")
+        elif pleasure > 0.6 and arousal > 0.5:
+            response_parts.append("Dies scheint ein besonders stimulierender Gedanke zu sein!")
+        elif arousal > 0.75:
+            response_parts.append("Das Thema erzeugt hohe interne Aktivität.")
+
+        # 5. Angepasste Dominanz-basierte Aussage
+        if dominance < 0.2 and len(unique_concepts) > 2 :
+            end_stability_window = 2
+            is_end_stable = False
+            # Prüfe die *originale* thought_chain auf Stabilität am Ende
+            if len(thought_chain) >= end_stability_window:
+                 original_end_segment = thought_chain[-end_stability_window:]
+                 # Prüfe, ob alle Elemente im Endsegment gültig sind und dem *letzten unterschiedlichen Konzept* ('last') entsprechen
+                 if all(c and isinstance(c, str) and c.strip() == last for c in original_end_segment):
+                      is_end_stable = True
+
+            if is_end_stable:
+                # Ende stabil: Formuliere positiver über den Fokus
+                response_parts.append(f"Obwohl verschiedene Konzepte untersucht wurden, lag der abschließende Fokus auf '{last}'.")
+            else:
+                # Ende nicht stabil: Alte Aussage verwenden
+                response_parts.append("Die genaue Richtung ist hier noch nicht gefestigt.")
+
+        # 6. Finalen Text zusammensetzen
+        if not response_parts:
+             return "[Fehler bei der Textgenerierung - keine Teile vorhanden]"
+
         final_response = response_parts[0]
         if len(response_parts) > 1:
             for part in response_parts[1:]:
-                 if final_response.endswith(':'): final_response += " " + part[0].lower() + part[1:]
-                 elif final_response.endswith('.'): final_response += " " + part
-                 else: final_response += ". " + part
-                 if not final_response.endswith('.'): final_response += "."
-        return final_response
+                 current_last_char = final_response.strip()[-1] if final_response.strip() else ""
+                 if not part or not isinstance(part, str) or not part.strip(): continue
+                 next_part_capitalized = part[0].upper() + part[1:]
+
+                 if current_last_char in ['.', '!', '?']:
+                     final_response += " " + next_part_capitalized
+                 elif current_last_char == ':':
+                      final_response += " " + part[0].lower() + part[1:]
+                 else:
+                     final_response += ". " + next_part_capitalized
+
+        # Bereinigung am Ende
+        while final_response.endswith(".."):
+            final_response = final_response[:-1]
+        if final_response.strip() and final_response.strip()[-1] not in ['.', '!', '?']:
+            final_response += "."
+
+        return final_response.strip()
 
 # *** NEUE Top-Level Funktion für Arona-Inferenz ***
 def run_arona_inference(
@@ -1242,15 +1349,31 @@ class QuantumTrainer:
     # _get_target_state und _calculate_feedback bleiben unverändert
     def _get_target_state(self, context: Dict) -> Dict[str, Any]:
         target_state = {"activations": {}, "emotion": None, "jump_profile": None}
-        target_config = context.get("target", {}); target_category = target_config.get("target_category")
-        if target_category and isinstance(target_category, str): target_state["activations"][target_category] = 0.95
-        target_emotion = context.get("emotion")
+        target_config = context.get("target", {});
+        target_category = target_config.get("target_category")
+        target_emotion = context.get("emotion") # Emotion unverändert
+
+        # --- NEU: Explizite negative Ziele für MemoryNodes ---
+        # Finde alle MemoryNodes im Modell
+        memory_node_labels = [n.label for n in self.model.nodes if isinstance(n, MemoryNode)] # Annahme: self.model ist verfügbar
+
+        for label in memory_node_labels:
+            if target_category and label == target_category:
+                target_state["activations"][label] = 0.95 # Positives Ziel
+            else:
+                target_state["activations"][label] = 0.05 # Negatives Ziel für alle anderen
+        # --- Ende NEU ---
+
+        # Emotion und Jump Profile wie bisher
         if target_emotion and isinstance(target_emotion, dict):
+             # ... (Emotion-Logik unverändert) ...
              valid_emotion = {dim: float(np.clip(target_emotion.get(dim, 0.0), -1.0, 1.0)) if np.isfinite(target_emotion.get(dim, 0.0)) else 0.0 for dim in EMOTION_DIMENSIONS}
              target_state["emotion"] = valid_emotion
         else: target_state["emotion"] = self.contextualizer.default_emotion.copy()
+
         target_jump_freq = target_config.get("expected_jump_freq")
         if target_jump_freq in ["niedrig", "mittel", "hoch"]: target_state["jump_profile"] = {"frequency": target_jump_freq}
+
         return target_state
 
     def _calculate_feedback(self, current_state: Dict[str, Any], target_state: Dict[str, Any],
@@ -1406,6 +1529,8 @@ class QuantumTrainer:
             epoch_num = i + 1
             # Führe train_epoch aus und erhalte Metriken
             avg_loss, jump_rate, avg_epoch_variance = self.train_epoch(epoch_num)
+            print(f"Epoch {epoch_num}: Loss={avg_loss:.3f}")
+
 
             # Überspringe Anpassungen, wenn der Loss ungültig ist
             if avg_loss is None or not np.isfinite(avg_loss):
@@ -1689,6 +1814,7 @@ def load_config(config_file: str = "config_arona.json") -> Dict:
         "enable_dynamic_shots": True,
         "stagnation_threshold_loss": 0.005,
         "shots_increase_factor": 1.5,
+        "loss_band_persistence_enabled": False,
         "shots_decrease_factor": 0.95,
         "max_simulation_shots": 30, # Angepasst an Beobachtung
         "min_simulation_shots": 3,
